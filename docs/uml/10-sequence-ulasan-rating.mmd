@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    actor W as Wisatawan (Member)
+    participant C as DestinationController
+    participant R as Model DestinationReview
+    participant DB as MySQL Database
+
+    W->>C: POST /destinasi/{slug}/ulasan (rating=5, comment="Sangat asri!")
+    C->>R: create(user_id, user_name, destination_name, rating, comment)
+    R->>DB: INSERT INTO destination_reviews
+    DB-->>R: Record ID
+    C-->>W: Flash Message "Ulasan Berhasil Dipublikasikan"

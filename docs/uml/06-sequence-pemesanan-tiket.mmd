@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor Wisatawan
+    participant UI as Browser / Frontend
+    participant OC as OrderController
+    participant DB as MySQL Database
+    participant Storage as File Storage
+
+    Wisatawan->>UI: Buka Form Pesan Tiket (/pemesanan/buat)
+    UI->>OC: create(Request $request)
+    OC->>DB: Query DestinationPrice::orderBy('destination_name')
+    DB-->>OC: Data Destinasi & Harga
+    OC-->>UI: Render View pemesanan.create
+    
+    Wisatawan->>UI: Input Destinasi, Tgl, Jml Tiket, Nama, WhatsApp
+    Wisatawan->>UI: Klik 'Pesan Tiket Sekarang'
+    UI->>OC: POST /pemesanan/simpan (Order Data)
+    
+    alt User Belum Login
+        OC-->>UI: Redirect ke /login (Pesan Error)
+    else User Terotentikasi
+        OC->>OC: Generate booking_code ('VC-YYYYMMDD-XXXXXX')
+        OC->>DB: Order::create([...])
+        DB-->>OC: Record Order Tersimpan (Status: Menunggu Pembayaran)
+        OC-->>UI: Redirect ke /pembayaran?booking=VC-...
+    end
+
+    Wisatawan->>UI: Mengunggah Resi Transfer Bank
+    UI->>OC: POST /pembayaran/unggah-bukti (File Image)
+    OC->>Storage: Pindahkan File ke /uploads/bukti-bayar
+    Storage-->>OC: File Path String
+    OC->>DB: Update orders (payment_proof, status = 'Menunggu Verifikasi')
+    DB-->>OC: Status Berhasil Diperbarui
+    OC-->>UI: Response Sukses & Update Tampilan

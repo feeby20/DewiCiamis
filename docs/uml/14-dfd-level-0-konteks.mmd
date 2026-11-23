@@ -1,0 +1,29 @@
+flowchart TD
+    Wisatawan(["Wisatawan / Pengunjung"])
+    Admin(["Petugas Admin Dispar"])
+    
+    System[["SISTEM INFORMASI & RESERVASI E-TIKET<br/>DESA WISATA CIAMIS"]]
+    
+    %% Aliran dari Wisatawan ke Sistem
+    Wisatawan -- "1. Data Akun & Kredensial Login" --> System
+    Wisatawan -- "2. Form Pemesanan Tiket Masuk" --> System
+    Wisatawan -- "3. Unggah Berkas Bukti Pembayaran" --> System
+    Wisatawan -- "4. Ulasan & Penilaian Destinasi" --> System
+    Wisatawan -- "5. Tiket Pengajuan Bantuan" --> System
+    
+    %% Aliran dari Sistem ke Wisatawan
+    System -- "A. Informasi 57 Desa Wisata & Berita" --> Wisatawan
+    System -- "B. Kode Booking & Instruksi Bayar" --> Wisatawan
+    System -- "C. Dokumen E-Tiket Resmi (QR Code)" --> Wisatawan
+    System -- "D. Jawaban Resmi Petugas Bantuan" --> Wisatawan
+    
+    %% Aliran dari Admin ke Sistem
+    Admin -- "I. Kredensial Otentikasi Admin" --> System
+    Admin -- "II. Validasi & Pengesahan Status Pembayaran" --> System
+    Admin -- "III. Artikel Berita & Informasi Festival" --> System
+    Admin -- "IV. Solusi & Balasan Pesan Bantuan" --> System
+    
+    %% Aliran dari Sistem ke Admin
+    System -- "a. Laporan & Metrik Pendapatan Tiket" --> Admin
+    System -- "b. Notifikasi Bukti Transfer Menunggu Verifikasi" --> Admin
+    System -- "c. Daftar Inbox Pesan Bantuan Masuk" --> Admin

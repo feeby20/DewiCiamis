@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    actor Wisatawan
+    participant UI as Halaman Detail Destinasi
+    participant DC as DestinationController
+    participant DB as MySQL Database
+
+    Wisatawan->>UI: Membuka Profil Destinasi (/destinasi/{slug})
+    UI->>DC: show($slug)
+    DC->>DB: Query DestinationReview where destination_name
+    DB-->>DC: Data Koleksi Ulasan
+    DC-->>UI: Render View destinasi.show
+    
+    Wisatawan->>UI: Mengisi Rating (1-5 Bintang) & Komentar
+    Wisatawan->>UI: Klik 'Kirim Ulasan'
+    UI->>DC: POST /destinasi/{slug}/ulasan
+    
+    alt Belum Terautentikasi
+        DC-->>UI: Redirect /login ('Silakan login terlebih dahulu')
+    else Terautentikasi
+        DC->>DB: DestinationReview::create([user_id, rating, comment, ...])
+        DB-->>DC: Record Ulasan Tersimpan
+        DC-->>UI: Redirect Back ('Terima kasih! Ulasan berhasil dikirim.')
+        UI-->>Wisatawan: Ulasan Langsung Ditampilkan di Daftar Review
+    end

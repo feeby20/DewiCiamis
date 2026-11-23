@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph Wisatawan ["Aktor: Wisatawan"]
+        A1["Buka Menu Tiket / Pilih Destinasi"]
+        A4["Lakukan Login Akun"]
+        A6["Pilih Destinasi, Tanggal Kunjungan & Jumlah Tiket"]
+        A9["Klik Tombol 'Pesan Tiket Sekarang'"]
+        A15["Lakukan Pembayaran Transfer ke Rekening Dispar"]
+        A16["Unggah Foto Resi / Bukti Transfer"]
+    end
+
+    subgraph Sistem ["Sistem: Visit Ciamis (Laravel)"]
+        A2["Tampilkan Halaman Katalog Destinasi & Tiket"]
+        A3{"Apakah Pengguna Sudah Login?"}
+        A5["Tampilkan Formulir Reservasi Tiket"]
+        A7["Kalkulasi Total Harga Tiket Otomatis"]
+        A8["Tampilkan Ringkasan Pesanan & Rincian Biaya"]
+        A10["Simpan Data Pesanan ke Tabel orders"]
+        A11["Generate Kode Booking Unik"]
+        A12["Set status: 'menunggu'"]
+        A13["Alihkan ke Halaman Pembayaran"]
+        A17["Simpan File Bukti ke Direktori uploads/"]
+        A18["Update Data Pesanan dengan Path Bukti Bayar"]
+        A19["Tampilkan Notifikasi 'Bukti Berhasil Diunggah'"]
+        A20["Tiket Siap Diverifikasi Petugas Admin"]
+    end
+
+    A1 --> A2
+    A2 --> A3
+    A3 -- "Belum" --> A4
+    A4 --> A5
+    A3 -- "Sudah" --> A5
+    A5 --> A6
+    A6 --> A7
+    A7 --> A8
+    A8 --> A9
+    A9 --> A10
+    A10 --> A11
+    A11 --> A12
+    A12 --> A13
+    A13 --> A15
+    A15 --> A16
+    A16 --> A17
+    A17 --> A18
+    A18 --> A19
+    A19 --> A20

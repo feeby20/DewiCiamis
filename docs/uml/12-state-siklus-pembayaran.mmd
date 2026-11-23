@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Menunggu_Pembayaran : Formulir Reservasi Dibuat
+    
+    Menunggu_Pembayaran --> Menunggu_Verifikasi : Wisatawan Mengunggah Bukti Transfer
+    Menunggu_Pembayaran --> Batal : Tidak Dibayar / Dibatalkan
+    
+    Menunggu_Verifikasi --> Lunas : Petugas Menyetujui Pembayaran
+    Menunggu_Verifikasi --> Ditolak : Bukti Tidak Valid / Kurang Bayar
+    
+    Ditolak --> Menunggu_Verifikasi : Unggah Ulang Bukti Transfer Baru
+    
+    Lunas --> [*] : Tiket Berlaku & Digunakan Kunjungan
+    Batal --> [*]

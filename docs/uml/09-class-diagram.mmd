@@ -1,0 +1,105 @@
+classDiagram
+    direction TB
+
+    class User {
+        +BigInteger id
+        +String nama
+        +String email
+        +String password
+        +String role
+        +String remember_token
+        +Timestamp created_at
+        +getNameAttribute() String
+        +setNameAttribute(value) void
+        +orders() HasMany
+        +reviews() HasMany
+    }
+
+    class Admin {
+        +Integer id
+        +String email
+        +String password_hash
+        +String remember_token
+        +getAuthPassword() String
+    }
+
+    class Order {
+        +BigInteger id
+        +BigInteger user_id
+        +String booking_code
+        +String full_name
+        +String whatsapp
+        +String destination_name
+        +Date visit_date
+        +Integer ticket_qty
+        +Integer ticket_price
+        +Integer total_price
+        +String payment_status
+        +String payment_proof
+        +Timestamp created_at
+        +user() BelongsTo
+    }
+
+    class DestinationReview {
+        +BigInteger id
+        +BigInteger user_id
+        +String user_name
+        +String destination_name
+        +Integer rating
+        +Text comment
+        +Timestamp created_at
+        +user() BelongsTo
+    }
+
+    class DestinationPrice {
+        +Integer id
+        +String destination_name
+        +Integer ticket_price
+        +Timestamp updated_at
+    }
+
+    class Berita {
+        +BigInteger id
+        +String judul
+        +String ringkasan
+        +LongText isi
+        +String gambar
+        +Date tanggal
+        +Timestamp created_at
+        +Timestamp updated_at
+    }
+
+    class SupportMessage {
+        +BigInteger id
+        +String ticket_code
+        +String name
+        +String email
+        +String topic
+        +String subject
+        +Text message
+        +Text admin_reply
+        +String status
+        +DateTime replied_at
+        +Timestamp created_at
+        +Timestamp updated_at
+    }
+
+    class SupportFaq {
+        +Integer id
+        +String category
+        +String question
+        +Text answer
+        +Integer sort_order
+        +Boolean is_active
+        +Timestamp created_at
+        +Timestamp updated_at
+    }
+
+    %% Relasi Asosiasi Model
+    User "1" --> "0..*" Order : hasMany / user_id
+    User "1" --> "0..*" DestinationReview : hasMany / user_id
+    DestinationPrice "1" ..> "0..*" Order : referenced by destination_name
+    DestinationPrice "1" ..> "0..*" DestinationReview : referenced by destination_name
+    Admin "1" ..> "0..*" SupportMessage : replies & resolves
+    Admin "1" ..> "0..*" Berita : authors & publishes
+    Admin "1" ..> "0..*" Order : verifies payment

@@ -1,0 +1,124 @@
+erDiagram
+    DESA_WISATA ||--|| PENGELOLA_DESA : "has 1 account (1:1)"
+    DESA_WISATA ||--o{ ORDERS : "receives orders (1:N)"
+    DESA_WISATA ||--o{ PENCAIRAN_DANA : "requests (1:N)"
+    PENGELOLA_DESA ||--o{ PENCAIRAN_DANA : "submits (1:N)"
+    PENGELOLA_DESA ||--o{ ORDERS : "validates entry (1:N)"
+    USERS ||--o{ ORDERS : "places (1:N)"
+    USERS ||--o{ DESTINATION_REVIEWS : "writes (1:N)"
+    ADMINS ||--o{ BERITA : "creates/manages"
+    ADMINS ||--o{ SUPPORT_MESSAGES : "replies/resolves"
+    ADMINS ||--o{ PENCAIRAN_DANA : "confirms transfer"
+
+    DESA_WISATA {
+        bigint id PK "auto_increment (1-57)"
+        varchar nama_desa "Nama Desa Wisata"
+        varchar slug UK "Slug URL Unik"
+        varchar kecamatan "Nama Kecamatan di Ciamis"
+        varchar sk_bupati "Nomor SK Penetapan"
+        varchar status_desa "Rintisan / Berkembang / Maju / Mandiri"
+        varchar kategori "Alam / Buatan / Sejarah & Budaya"
+        varchar destinasi_unggulan "Nama Potensi Objek Wisata"
+        text deskripsi "Deskripsi Lengkap Desa Wisata"
+        varchar gambar "Path Berkas Foto Destinasi"
+        varchar jam_buka "Jam Operasional Wisata"
+        varchar hari_operasional "Hari Kunjungan Buka"
+        decimal harga_tiket "Tarif Tiket Masuk (Rp)"
+        varchar nama_bank "Bank Kas Desa / BUMDes"
+        varchar nomor_rekening "Nomor Rekening Bank"
+        varchar atas_nama_rekening "Nama Pemilik Rekening Kas"
+        decimal saldo_tersedia "Saldo Tiket Belum Dicairkan"
+        decimal saldo_dicairkan "Total Dana yang Telah Dicairkan"
+    }
+
+    PENGELOLA_DESA {
+        bigint id PK "auto_increment"
+        bigint desa_id FK "Relasi ke desa_wisata.id"
+        varchar name "Nama Pengelola Desa"
+        varchar username UK "Username Login (desa_slug)"
+        varchar email UK "Email Resmi Pengelola"
+        varchar password "Bcrypt Hash"
+        varchar no_hp "Nomor WhatsApp Pengelola"
+        boolean is_active "Status Akun Aktif"
+    }
+
+    PENCAIRAN_DANA {
+        bigint id PK "auto_increment"
+        varchar kode_pencairan UK "Kode Unik (WD-YYYYMMDD-XXX)"
+        bigint desa_id FK "Relasi ke desa_wisata.id"
+        bigint pengelola_id FK "Relasi ke pengelola_desa.id"
+        decimal nominal "Jumlah Dana yang Dicairkan"
+        varchar bank_tujuan "Nama Bank Penerima"
+        varchar nomor_rekening "Nomor Rekening Tujuan"
+        varchar atas_nama "Atas Nama Rekening Kas Desa"
+        enum status "'menunggu', 'disetujui', 'ditolak'"
+        varchar bukti_transfer "Resi Bukti Transfer dari Dispar"
+        text catatan_admin "Catatan Resmi Dinas"
+        timestamp tanggal_pengajuan "Waktu Pengajuan"
+        timestamp tanggal_konfirmasi "Waktu Transfer Dikonfirmasi"
+    }
+
+    USERS {
+        bigint id PK "auto_increment"
+        varchar nama "Nama Lengkap"
+        varchar email UK "Unique Email Akun"
+        varchar password "Bcrypt Hash"
+        varchar role "Hak Akses ('user')"
+        timestamp created_at "Waktu Pendaftaran"
+    }
+
+    ADMINS {
+        int id PK "auto_increment"
+        varchar email "Email Admin"
+        varchar password_hash "Bcrypt / Hash Password"
+    }
+
+    ORDERS {
+        bigint id PK "auto_increment"
+        bigint user_id FK "Relasi ke users.id"
+        bigint desa_id FK "Relasi ke desa_wisata.id"
+        varchar booking_code UK "Unique Booking Code"
+        varchar full_name "Nama Pemesan"
+        varchar whatsapp "Nomor WhatsApp Pemesan"
+        varchar destination_name "Nama Destinasi Wisata"
+        date visit_date "Tanggal Kunjungan"
+        int ticket_qty "Jumlah Tiket Masuk"
+        int ticket_price "Harga Satuan Tiket"
+        int total_price "Total Nominal Pembayaran"
+        varchar payment_status "'menunggu', 'lunas', 'ditolak'"
+        varchar payment_proof "Path Berkas Bukti Bayar"
+        enum ticket_status "'active', 'used', 'expired'"
+        timestamp validated_at "Waktu Scan / Check-In"
+        bigint validated_by FK "Relasi ke pengelola_desa.id"
+        timestamp created_at "Waktu Transaksi"
+    }
+
+    DESTINATION_REVIEWS {
+        bigint id PK "auto_increment"
+        bigint user_id FK "Relasi ke users.id"
+        varchar user_name "Nama Penulis Ulasan"
+        varchar destination_name "Nama Destinasi"
+        tinyint rating "Skala Penilaian (1-5)"
+        text comment "Isi Ulasan / Testimoni"
+        timestamp created_at "Waktu Ditulis"
+    }
+
+    BERITA {
+        bigint id PK "auto_increment"
+        varchar judul "Judul Artikel Berita"
+        text ringkasan "Ringkasan Singkat Artikel"
+        longtext isi "Konten Lengkap Berita"
+        varchar gambar "Path Berkas Gambar Cover"
+        date tanggal "Tanggal Publikasi"
+    }
+
+    SUPPORT_MESSAGES {
+        bigint id PK "auto_increment"
+        varchar ticket_code UK "Kode Tiket Bantuan Unik"
+        varchar name "Nama Pengirim"
+        varchar email "Email Pengirim"
+        varchar topic "Kategori / Topik Bantuan"
+        text message "Uraian Pertanyaan / Keluhan"
+        text admin_reply "Balasan Resmi Petugas Dispar"
+        varchar status "Status ('baru', 'selesai')"
+    }

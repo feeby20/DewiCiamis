@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    actor A as Admin Dinas Dispar
+    participant C as Admin\OrderController
+    participant O as Model Order
+    participant D as Model DesaWisata
+    participant DB as MySQL Database
+
+    A->>C: GET /admin/verifikasi
+    C->>O: whereNotNull('payment_proof')->where('payment_status', 'menunggu')->get()
+    O->>DB: SELECT * FROM orders
+    DB-->>O: Dataset Pesanan
+    C-->>A: Tampilkan Daftar Pesanan Siap Verifikasi
+
+    A->>C: POST /admin/orders/{id}/status (status='lunas')
+    C->>O: findOrFail(id)->update(['payment_status' => 'lunas', 'ticket_status' => 'active'])
+    O->>DB: UPDATE orders SET payment_status='lunas', ticket_status='active'
+    C->>D: find(order->desa_id)->increment('saldo_tersedia', order->total_price)
+    D->>DB: UPDATE desa_wisata SET saldo_tersedia = saldo_tersedia + total_price
+    DB-->>C: Success
+    C-->>A: Tampilkan Notifikasi "Pembayaran Lunas & Saldo Masuk ke Kas Desa"

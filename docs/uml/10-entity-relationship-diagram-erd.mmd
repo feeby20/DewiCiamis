@@ -1,0 +1,94 @@
+erDiagram
+    USERS ||--o{ ORDERS : "places (1:N)"
+    USERS ||--o{ DESTINATION_REVIEWS : "writes (1:N)"
+    DESTINATION_PRICES ||--o{ ORDERS : "pricing source"
+    DESTINATION_PRICES ||--o{ DESTINATION_REVIEWS : "reviewed target"
+    ADMINS ||--o{ BERITA : "creates/manages"
+    ADMINS ||--o{ SUPPORT_MESSAGES : "replies/resolves"
+
+    USERS {
+        bigint id PK "auto_increment"
+        varchar nama "Nama Lengkap"
+        varchar email "Unique Email Akun"
+        varchar password "Bcrypt Hash"
+        varchar role "Hak Akses ('user')"
+        varchar remember_token "Session Token"
+        timestamp created_at "Waktu Pendaftaran"
+    }
+
+    ADMINS {
+        int id PK "auto_increment"
+        varchar email "Email Admin"
+        varchar password_hash "Bcrypt / Hash Password"
+        varchar remember_token "Session Token"
+    }
+
+    ORDERS {
+        bigint id PK "auto_increment"
+        bigint user_id FK "Relasi ke users.id"
+        varchar booking_code UK "Unique Booking Code"
+        varchar full_name "Nama Pemesan"
+        varchar whatsapp "Nomor WhatsApp Pemesan"
+        varchar destination_name "Nama Destinasi Wisata"
+        date visit_date "Tanggal Kunjungan"
+        int ticket_qty "Jumlah Tiket Masuk"
+        int ticket_price "Harga Satuan Tiket"
+        int total_price "Total Nominal Pembayaran"
+        varchar payment_status "Status ('Menunggu Pembayaran', 'Menunggu Verifikasi', 'Lunas')"
+        varchar payment_proof "Path Berkas Bukti Bayar"
+        timestamp created_at "Waktu Transaksi"
+    }
+
+    DESTINATION_REVIEWS {
+        bigint id PK "auto_increment"
+        bigint user_id FK "Relasi ke users.id"
+        varchar user_name "Nama Penulis Ulasan"
+        varchar destination_name "Nama Destinasi"
+        tinyint rating "Skala Penilaian (1-5)"
+        text comment "Isi Ulasan / Testimoni"
+        timestamp created_at "Waktu Ditulis"
+    }
+
+    DESTINATION_PRICES {
+        int id PK "auto_increment"
+        varchar destination_name UK "Nama Destinasi Wisata"
+        int ticket_price "Tarif Retribusi Tiket (Rp)"
+        timestamp updated_at "Pembaruan Terakhir"
+    }
+
+    BERITA {
+        bigint id PK "auto_increment"
+        varchar judul "Judul Artikel Berita"
+        text ringkasan "Ringkasan Singkat Artikel"
+        longtext isi "Konten Lengkap Berita"
+        varchar gambar "Path Berkas Gambar Cover"
+        date tanggal "Tanggal Publikasi"
+        timestamp created_at "Timestamp Dibuat"
+        timestamp updated_at "Timestamp Diperbarui"
+    }
+
+    SUPPORT_MESSAGES {
+        bigint id PK "auto_increment"
+        varchar ticket_code UK "Kode Tiket Bantuan Unik"
+        varchar name "Nama Pengirim"
+        varchar email "Email Pengirim"
+        varchar topic "Kategori / Topik Bantuan"
+        varchar subject "Subjek Masalah"
+        text message "Uraian Pertanyaan / Keluhan"
+        text admin_reply "Balasan Resmi Petugas Dispar"
+        varchar status "Status ('baru', 'selesai')"
+        datetime replied_at "Waktu Tanggapan Diberikan"
+        timestamp created_at "Timestamp Dibuat"
+        timestamp updated_at "Timestamp Diperbarui"
+    }
+
+    SUPPORT_FAQS {
+        int id PK "auto_increment"
+        varchar category "Kategori Pertanyaan"
+        varchar question "Pertanyaan Umum"
+        text answer "Jawaban / Solusi"
+        int sort_order "Urutan Tampilan"
+        boolean is_active "Status Aktif (1/0)"
+        timestamp created_at "Timestamp Dibuat"
+        timestamp updated_at "Timestamp Diperbarui"
+    }

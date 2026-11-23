@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Active : Tiket Lunas & QR Code Diterbitkan
+    Active --> Used : Pengelola Desa Melakukan Scan & Validasi di Gerbang
+    Active --> Expired : Melewati Tanggal Kunjungan Tanpa Check-In
+    Used --> [*] : Wisatawan Masuk Area Wisata
+    Expired --> [*]

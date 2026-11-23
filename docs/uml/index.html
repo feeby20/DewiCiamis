@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisasi Diagram UML Multi-Role - DewiCiamis</title>
+  <style>
+    :root {
+      --primary: #174c38;
+      --primary-light: #e8f5e9;
+      --secondary: #2e7d32;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 30px 20px;
+    }
+
+    .header {
+      max-width: 1300px;
+      margin: 0 auto 30px auto;
+      text-align: center;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+    }
+
+    .header h1 {
+      color: var(--primary);
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .nav-tabs a {
+      text-decoration: none;
+      padding: 6px 12px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+
+    .nav-tabs a:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .diagram-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .diagram-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    .diagram-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .diagram-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--secondary);
+    }
+
+    .diagram-preview {
+      overflow-x: auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diagram-preview svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+  <script src="mermaid.min.js"></script>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Visualisasi Diagram UML & Arsitektur Multi-Role</h1>
+    <p>Sistem Informasi & Reservasi E-Tiket 57 Desa Wisata Kabupaten Ciamis</p>
+    <div style="margin-top: 10px;">
+      <span
+        style="background: #e8f5e9; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">Wisatawan</span>
+      <span
+        style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">Pengelola
+        57 Desa Wisata</span>
+      <span
+        style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">Admin
+        Dinas Dispar</span>
+    </div>
+    <div class="nav-tabs">
+      <a href="#diag-01">1. Use Case</a>
+      <a href="#diag-02">2. Act. Pesan</a>
+      <a href="#diag-03">3. Act. Verifikasi</a>
+      <a href="#diag-04">4. Act. Berita</a>
+      <a href="#diag-05">5. Act. Bantuan</a>
+      <a href="#diag-06">6. Act. Validasi Tiket</a>
+      <a href="#diag-07">7. Act. Pencairan Dana</a>
+      <a href="#diag-08">8. Seq. Pesan</a>
+      <a href="#diag-09">9. Seq. Verifikasi</a>
+      <a href="#diag-10">10. Seq. Ulasan</a>
+      <a href="#diag-11">11. Seq. Validasi Tiket</a>
+      <a href="#diag-12">12. Seq. Pencairan Dana</a>
+      <a href="#diag-13">13. Class Diagram</a>
+      <a href="#diag-14">14. ERD</a>
+      <a href="#diag-15">15. LRS</a>
+      <a href="#diag-16">16. State Bayar</a>
+      <a href="#diag-17">17. State Bantuan</a>
+      <a href="#diag-18">18. State Check-In</a>
+      <a href="#diag-19">19. State Pencairan</a>
+      <a href="#diag-20">20. DFD Konteks</a>
+    </div>
+  </div>
+
+  <div class="container" id="diagramsContainer"></div>
+
+  <script>
+    const diagrams = [
+      { id: "01-use-case-diagram", file: "01-use-case-diagram.mmd", title: "1. Use Case Diagram (Multi-Role: Wisatawan, Pengelola Desa, Admin Dinas)" },
+      { id: "02-activity-pemesanan-pembayaran", file: "02-activity-pemesanan-pembayaran.mmd", title: "2. Activity Diagram: Pemesanan & Pembayaran Tiket" },
+      { id: "03-activity-verifikasi-admin", file: "03-activity-verifikasi-admin.mmd", title: "3. Activity Diagram: Verifikasi Pembayaran oleh Admin Dinas" },
+      { id: "04-activity-manajemen-berita", file: "04-activity-manajemen-berita.mmd", title: "4. Activity Diagram: Manajemen Berita Wisata" },
+      { id: "05-activity-layanan-bantuan", file: "05-activity-layanan-bantuan.mmd", title: "5. Activity Diagram: Pengajuan & Tanggapan Layanan Bantuan" },
+      { id: "06-activity-validasi-tiket-pengelola", file: "06-activity-validasi-tiket-pengelola.mmd", title: "6. Activity Diagram: Validasi & Scan E-Ticket di Gerbang Masuk oleh Pengelola Desa" },
+      { id: "07-activity-rekap-pencairan-admin", file: "07-activity-rekap-pencairan-admin.mmd", title: "7. Activity Diagram: Rekap & Konfirmasi Pencairan Dana oleh Admin Dinas" },
+      { id: "08-sequence-pemesanan-tiket", file: "08-sequence-pemesanan-tiket.mmd", title: "8. Sequence Diagram: Alur Pemesanan & Pembayaran Tiket" },
+      { id: "09-sequence-verifikasi-admin", file: "09-sequence-verifikasi-admin.mmd", title: "9. Sequence Diagram: Verifikasi Pembayaran oleh Petugas Admin" },
+      { id: "10-sequence-ulasan-rating", file: "10-sequence-ulasan-rating.mmd", title: "10. Sequence Diagram: Penulisan Ulasan & Rating Destinasi" },
+      { id: "11-sequence-validasi-tiket-pengelola", file: "11-sequence-validasi-tiket-pengelola.mmd", title: "11. Sequence Diagram: Validasi E-Ticket di Lokasi Gerbang Desa Wisata" },
+      { id: "12-sequence-pencairan-dana-desa", file: "12-sequence-pencairan-dana-desa.mmd", title: "12. Sequence Diagram: Pengajuan & Konfirmasi Transfer Pencairan Dana Kas Desa" },
+      { id: "13-class-diagram", file: "13-class-diagram.mmd", title: "13. Class Diagram" },
+      { id: "14-entity-relationship-diagram-erd", file: "14-entity-relationship-diagram-erd.mmd", title: "14. Entity Relationship Diagram (ERD)" },
+      { id: "15-logical-record-structure-lrs", file: "15-logical-record-structure-lrs.mmd", title: "15. Logical Record Structure (LRS)" },
+      { id: "16-state-siklus-pembayaran", file: "16-state-siklus-pembayaran.mmd", title: "16. State Machine Diagram: Siklus Status Pembayaran Tiket" },
+      { id: "17-state-siklus-bantuan", file: "17-state-siklus-bantuan.mmd", title: "17. State Machine Diagram: Siklus Tiket Layanan Bantuan" },
+      { id: "18-state-siklus-tiket-masuk", file: "18-state-siklus-tiket-masuk.mmd", title: "18. State Machine Diagram: Siklus Penggunaan Tiket (Check-In Wisatawan)" },
+      { id: "19-state-siklus-pencairan-dana", file: "19-state-siklus-pencairan-dana.mmd", title: "19. State Machine Diagram: Siklus Status Pencairan Dana Desa" },
+      { id: "20-dfd-level-0-konteks", file: "20-dfd-level-0-konteks.mmd", title: "20. Diagram Konteks & Aliran Data (DFD Level 0)" }
+    ];
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { useMaxWidth: false, htmlLabels: true }
+    });
+
+    const container = document.getElementById('diagramsContainer');
+
+    async function loadDiagrams() {
+      for (const [index, d] of diagrams.entries()) {
+        const card = document.createElement('div');
+        card.className = 'diagram-card';
+        card.id = `diag-${String(index + 1).padStart(2, '0')}`;
+        card.innerHTML = `
+          <div class="diagram-header">
+            <div class="diagram-title">${d.title}</div>
+            <div class="diagram-actions">
+              <a href="${d.id}.svg" download="${d.id}.svg" class="btn btn-primary" target="_blank">Unduh SVG</a>
+              <a href="${d.id}.png" download="${d.id}.png" class="btn" target="_blank">Unduh PNG</a>
+              <a href="${d.file}" class="btn" target="_blank">Kode .MMD</a>
+            </div>
+          </div>
+          <div class="diagram-preview" id="preview-${d.id}">
+            <em>Memuat diagram...</em>
+          </div>
+        `;
+        container.appendChild(card);
+
+        try {
+          const resp = await fetch(d.file);
+          const mmdText = await resp.text();
+          const previewEl = document.getElementById(`preview-${d.id}`);
+          const { svg } = await mermaid.render(`svg_${d.id.replace(/-/g, '_')}`, mmdText.trim());
+          previewEl.innerHTML = svg;
+        } catch (err) {
+          const previewEl = document.getElementById(`preview-${d.id}`);
+          previewEl.innerHTML = `<span style="color:red">Error rendering: ${err.message}</span>`;
+        }
+      }
+    }
+
+    loadDiagrams();
+  </script>
+</body>
+
+</html>

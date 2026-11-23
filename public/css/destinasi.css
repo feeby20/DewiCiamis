@@ -1,0 +1,683 @@
+
+/* =========================================================
+   DESTINASI.CSS
+   HALAMAN DESTINASI WISATA CIAMIS
+========================================================= */
+
+
+/* =========================================================
+   PENGATURAN DASAR
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HEADER DESTINASI
+========================================================= */
+
+.destination-header {
+    padding: 145px 20px 80px;
+    background: linear-gradient(
+        135deg,
+        #e8f5ee 0%,
+        #f8faf9 55%,
+        #ffffff 100%
+    );
+    text-align: center;
+}
+
+.destination-header h1 {
+    color: #075b43;
+    font-size: 38px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.destination-header p {
+    color: #6c757d;
+    font-size: 16px;
+    line-height: 1.8;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   BAGIAN DAFTAR DESTINASI
+========================================================= */
+
+.destination-list {
+    padding: 60px 0 80px;
+    background: #f8faf9;
+}
+
+.destination-list .container {
+    max-width: 1200px;
+}
+
+
+/* =========================================================
+   JUDUL BAGIAN
+========================================================= */
+
+.destination-section-title {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.destination-section-title h2 {
+    color: #075b43;
+    font-size: 30px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.destination-section-title p {
+    color: #777777;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   KARTU DESTINASI
+========================================================= */
+
+.destination-card {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #ffffff;
+
+    border: 1px solid #e8eeea;
+    border-radius: 16px;
+
+    overflow: hidden;
+
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease;
+}
+
+.destination-card:hover {
+    transform: translateY(-5px);
+
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+
+/* =========================================================
+   GAMBAR DESTINASI
+========================================================= */
+
+.destination-image {
+    width: 100%;
+    height: 220px;
+
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.destination-image img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transition: transform 0.4s ease;
+}
+
+.destination-card:hover .destination-image img {
+    transform: scale(1.05);
+}
+
+
+/* =========================================================
+   ISI KARTU DESTINASI
+   BAGIAN INI MEMPERBAIKI JARAK TULISAN
+========================================================= */
+
+.destination-card .destination-card-body,
+.destination-card-body {
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: 100% !important;
+    min-width: 0;
+
+    min-height: 250px;
+
+    /* Jarak kiri dan kanan tulisan */
+    padding: 24px 28px !important;
+
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* =========================================================
+   LOKASI DESTINASI
+========================================================= */
+
+.destination-card .destination-location,
+.destination-location {
+    display: block;
+
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+
+    color: #6c757d;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.destination-location i {
+    color: #198754;
+    margin-right: 6px;
+}
+
+
+/* =========================================================
+   JUDUL NAMA DESTINASI
+========================================================= */
+
+.destination-card .destination-card-body h3,
+.destination-card-body h3 {
+    display: block;
+
+    margin: 0 0 12px 0 !important;
+    padding: 0 !important;
+
+    color: #174c38;
+
+    font-size: 22px;
+    font-weight: 700;
+
+    line-height: 1.4;
+
+    text-align: left;
+}
+
+
+/* =========================================================
+   DESKRIPSI DESTINASI
+========================================================= */
+
+.destination-card .destination-card-body p,
+.destination-card-body p {
+    margin: 0 0 20px 0 !important;
+    padding: 0 !important;
+
+    color: #6c757d;
+
+    font-size: 14px;
+    line-height: 1.8;
+
+    text-align: left;
+}
+
+
+/* =========================================================
+   KATEGORI DESTINASI
+========================================================= */
+
+.destination-category {
+    display: inline-block;
+
+    width: fit-content;
+
+    padding: 6px 13px;
+    margin-bottom: 12px;
+
+    background: #e8f5ee;
+    color: #08784f;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    border-radius: 20px;
+}
+
+
+/* =========================================================
+   FOOTER KARTU
+========================================================= */
+
+.destination-card-footer {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    margin-top: auto !important;
+    padding-top: 5px;
+}
+
+
+/* =========================================================
+   TOMBOL LIHAT DETAIL
+========================================================= */
+
+.destination-card-footer a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 12px 22px;
+
+    background: #168653;
+    color: #ffffff;
+
+    border: none;
+    border-radius: 9px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition: all 0.3s ease;
+}
+
+.destination-card-footer a:hover {
+    background: #08663e;
+    color: #ffffff;
+
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   FILTER DAN PENCARIAN
+========================================================= */
+
+.destination-filter {
+    margin-bottom: 30px;
+}
+
+.destination-filter input,
+.destination-filter select {
+    width: 100%;
+
+    padding: 12px 15px;
+
+    border: 1px solid #dce5df;
+    border-radius: 8px;
+
+    outline: none;
+
+    font-size: 14px;
+}
+
+.destination-filter input:focus,
+.destination-filter select:focus {
+    border-color: #198754;
+
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
+}
+
+
+/* =========================================================
+   RESPONSIVE TABLET
+========================================================= */
+
+@media (max-width: 991px) {
+
+    .destination-header {
+        padding: 125px 20px 65px;
+    }
+
+    .destination-header h1 {
+        font-size: 32px;
+    }
+
+    .destination-list {
+        padding: 45px 0 60px;
+    }
+
+    .destination-image {
+        height: 200px;
+    }
+
+    .destination-card .destination-card-body,
+    .destination-card-body {
+        padding: 23px 25px !important;
+    }
+
+    .destination-card-body h3 {
+        font-size: 20px;
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE HP
+========================================================= */
+
+@media (max-width: 767px) {
+
+    .destination-header {
+        padding: 110px 18px 55px;
+    }
+
+    .destination-header h1 {
+        font-size: 27px;
+    }
+
+    .destination-header p {
+        font-size: 14px;
+    }
+
+    .destination-list {
+        padding: 35px 0 50px;
+    }
+
+    .destination-section-title h2 {
+        font-size: 24px;
+    }
+
+    .destination-card {
+        border-radius: 13px;
+    }
+
+    .destination-image {
+        height: 210px;
+    }
+
+    .destination-card .destination-card-body,
+    .destination-card-body {
+        min-height: auto;
+        padding: 22px 24px !important;
+    }
+
+    .destination-card-body h3 {
+        font-size: 19px;
+    }
+
+    .destination-card-body p {
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    .destination-card-footer a {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+}
+
+/* =========================================================
+   STYLE TAMBAHAN: HALAMAN DESA WISATA & KELOMPOK DESTINASI
+========================================================= */
+
+/* Badge Status Desa Wisata (Berkembang / Rintisan) */
+.desa-status-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: inline-flex;
+    align-items: center;
+}
+
+.desa-status-badge.status-berkembang {
+    background: #198754;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.desa-status-badge.status-rintisan {
+    background: #0dcaf0;
+    color: #043f4a;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Badge SK Desa Wisata */
+.desa-sk-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #495057;
+    background: #f1f5f3;
+    border: 1px solid #d0ded6;
+    padding: 4px 10px;
+    border-radius: 8px;
+    width: fit-content;
+}
+
+/* Badge Jumlah Destinasi di pojok kanan atas foto */
+.desa-dest-count-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    color: #198754;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(25, 135, 84, 0.18);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Judul dan Deskripsi Desa Wisata */
+.destination-card .destination-card-body h3.desa-title,
+.desa-title {
+    color: #174c38 !important;
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.35 !important;
+}
+
+.desa-desc {
+    color: #6c757d;
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 15px !important;
+}
+
+/* Kotak Pengelompokan Destinasi di Dalam Desa */
+.desa-grouped-destinasi {
+    background: #f4fbf7;
+    border: 1px solid #d2eedf;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    width: 100%;
+}
+
+.desa-grouped-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #174c38;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.desa-destinasi-tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.desa-destinasi-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #c3e6d3;
+    color: #1a573b;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.desa-destinasi-pill:hover {
+    background: #e8f5ee;
+    border-color: #198754;
+    color: #0e452c;
+    transform: translateY(-1px);
+}
+
+/* Box Detail Per Destinasi & Fasilitas */
+.desa-dest-box {
+    background: #ffffff;
+    border: 1px solid #dcece3 !important;
+    border-radius: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.desa-dest-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 76, 56, 0.08);
+}
+
+.dest-item-title {
+    color: #174c38;
+}
+
+.dest-item-desc {
+    color: #55625b !important;
+}
+
+.dest-facilities-wrap .badge {
+    background: #f8faf9 !important;
+    border: 1px solid #d8e6de !important;
+    color: #3b5045 !important;
+    border-radius: 6px;
+    font-size: 11.5px;
+    padding: 3px 7px;
+}
+
+/* Kotak Pencarian & Filter */
+.search-box-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #dce5df;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-box-wrap:focus-within {
+    border-color: #198754;
+    box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.12) !important;
+}
+
+.search-box-wrap .form-control {
+    border: none !important;
+    padding: 12px 14px;
+    font-size: 14.5px;
+}
+
+.search-box-wrap .form-control:focus {
+    box-shadow: none !important;
+}
+
+.search-box-wrap .input-group-text {
+    padding-left: 16px;
+    font-size: 16px;
+}
+
+/* Category Filter Pills */
+.category-pills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.category-pill-btn {
+    border: 1px solid #d6e4dc;
+    background: #ffffff;
+    color: #385547;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.category-pill-btn:hover {
+    background: #eef7f2;
+    border-color: #198754;
+    color: #198754;
+}
+
+.category-pill-btn.active {
+    background: #198754;
+    border-color: #198754;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.25);
+}
+
+/* View Mode Buttons */
+.view-toggle-group .btn {
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-color: #c9ded3;
+    color: #198754;
+}
+
+.view-toggle-group .btn:hover {
+    background: #e8f5ee;
+    color: #146c43;
+}
+
+.view-toggle-group .btn.active {
+    background: #198754 !important;
+    border-color: #198754 !important;
+    color: #ffffff !important;
+}
+
+/* Tampilan Grouped Desa Row */
+.grouped-desa-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border: 1px solid #e5eee8 !important;
+}
+
+.grouped-desa-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.grouped-dest-item {
+    transition: background-color 0.2s ease;
+}
+
+.grouped-dest-item:hover {
+    background-color: #eaf6ef !important;
+}
+

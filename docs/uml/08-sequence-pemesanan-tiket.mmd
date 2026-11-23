@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor W as Wisatawan (Member)
+    participant C as OrderController
+    participant O as Model Order
+    participant D as Model DesaWisata
+    participant DB as MySQL Database
+
+    W->>C: GET /pemesanan/buat?destinasi=Kawali
+    C->>D: where('nama_desa', 'Kawali')->first()
+    D-->>C: Data Desa & Harga Tiket
+    C-->>W: Tampilkan Form Pemesanan Tiket
+
+    W->>C: POST /pemesanan/simpan (Data Pesanan & Jumlah Tiket)
+    C->>O: create(user_id, desa_id, booking_code, total_price, payment_status='menunggu')
+    O->>DB: INSERT INTO orders
+    DB-->>O: Record ID
+    C-->>W: Redirect ke /pembayaran (Tampilkan Kode Booking & Rekening Dispar)
+
+    W->>C: POST /pembayaran/unggah-bukti (Upload Resi Transfer)
+    C->>O: update(payment_proof, payment_status='menunggu')
+    O->>DB: UPDATE orders
+    DB-->>O: Updated
+    C-->>W: Tampilkan Notifikasi "Bukti Berhasil Diunggah, Menunggu Verifikasi"

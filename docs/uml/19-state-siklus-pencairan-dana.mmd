@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Menunggu_Konfirmasi : Pengelola Mengajukan Pencairan Saldo
+    Menunggu_Konfirmasi --> Disetujui_Ditransfer : Admin Dinas Transfer Dana & Unggah Resi
+    Menunggu_Konfirmasi --> Ditolak : Rekening Tidak Valid / Administrasi Ditolak
+    Ditolak --> [*] : Saldo Dikembalikan ke Kas Desa
+    Disetujui_Ditransfer --> [*] : Dana Masuk ke Rekening Kas Desa / BUMDes

@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph Admin ["Aktor: Petugas Admin Dispar"]
+        B1["Buka Menu Verifikasi Bukti Pembayaran"]
+        B3["Pilih Pesanan & Periksa Gambar Bukti Transfer"]
+        B6{"Keputusan: Apakah Bukti Transfer Valid?"}
+        B7["Klik Tombol 'Setujui Pembayaran (Lunas)'"]
+        B8["Klik Tombol 'Tolak Pembayaran' & Isi Alasan"]
+    end
+
+    subgraph Sistem ["Sistem: Visit Ciamis (Laravel)"]
+        B2["Ambil Data Pesanan dengan Bukti Masuk"]
+        B4["Buka Modal Preview Gambar Resi Transfer"]
+        B5["Tampilkan Rincian Nominal & Rekening Tujuan"]
+        B9["Update payment_status: 'lunas'"]
+        B10["Update ticket_status: 'active' (QR Code Aktif)"]
+        B11["Tambahkan Nominal ke Saldo Tersedia Desa"]
+        B12["Tampilkan Notifikasi: 'Pembayaran Disetujui'"]
+        B13["Update payment_status: 'ditolak'"]
+        B14["Simpan Catatan Alasan Penolakan"]
+        B15["Tampilkan Notifikasi Peringatan: 'Pembayaran Ditolak'"]
+    end
+
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+    B4 --> B5
+    B5 --> B6
+    B6 -- "Valid & Sesuai" --> B7
+    B6 -- "Palsu / Tidak Sesuai" --> B8
+    B7 --> B9
+    B9 --> B10
+    B10 --> B11
+    B11 --> B12
+    B8 --> B13
+    B13 --> B14
+    B14 --> B15

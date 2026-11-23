@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    actor W as Wisatawan di Lokasi
+    actor P as Pengelola Desa Wisata
+    participant C as Pengelola\TicketValidationController
+    participant O as Model Order
+    participant DB as MySQL Database
+
+    W->>P: Menunjukkan E-Ticket / Kode Booking (QR Code)
+    P->>C: POST /pengelola/validasi/cek (booking_code='VC-20261110-3F048442')
+    C->>O: where('booking_code', booking_code)->first()
+    O->>DB: SELECT * FROM orders WHERE booking_code = ?
+    DB-->>O: Data Order
+    C-->>P: Tampilkan Data Wisatawan (Jumlah Orang & Status LUNAS)
+
+    P->>C: POST /pengelola/validasi/{id}/konfirmasi
+    C->>O: update(ticket_status='used', validated_at=NOW(), validated_by=pengelola_id)
+    O->>DB: UPDATE orders SET ticket_status='used', validated_at=NOW()
+    DB-->>C: Updated
+    C-->>P: Notifikasi Hijau "TIKET VALID - CHECK-IN BERHASIL"
+    P-->>W: Mempersilakan Wisatawan Masuk ke Kawasan Wisata

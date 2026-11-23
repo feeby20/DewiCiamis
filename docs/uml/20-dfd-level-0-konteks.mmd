@@ -1,0 +1,37 @@
+flowchart TD
+    Wisatawan(["Wisatawan / Pengunjung"])
+    Pengelola(["Pengelola 57 Desa Wisata"])
+    Admin(["Admin Dinas Pariwisata"])
+    
+    System[["SISTEM INFORMASI & RESERVASI E-TIKET<br/>57 DESA WISATA CIAMIS"]]
+    
+    %% Aliran dari Wisatawan ke Sistem
+    Wisatawan -- "1. Form Pesanan & Bukti Bayar" --> System
+    Wisatawan -- "2. Kode Booking untuk Check-In" --> System
+    Wisatawan -- "3. Ulasan, Rating & Pesan Bantuan" --> System
+    
+    %% Aliran dari Sistem ke Wisatawan
+    System -- "A. Katalog 57 Desa & Berita Wisata" --> Wisatawan
+    System -- "B. E-Ticket Resmi QR Code" --> Wisatawan
+    System -- "C. Status Validasi Masuk" --> Wisatawan
+    
+    %% Aliran dari Pengelola Desa ke Sistem
+    Pengelola -- "I. Update Profil, Foto, Jam Buka & Tarif Tiket" --> System
+    Pengelola -- "II. Validasi & Scan Tiket di Lokasi" --> System
+    Pengelola -- "III. Input Rekening Bank Kas Desa / BUMDes" --> System
+    Pengelola -- "IV. Permohonan Pencairan Dana Tiket" --> System
+    
+    %% Aliran dari Sistem ke Pengelola Desa
+    System -- "a. Notifikasi Validasi & Kuota Masuk" --> Pengelola
+    System -- "b. Laporan Pendapatan & Saldo Kas Desa" --> Pengelola
+    System -- "c. Bukti Resi Pencairan Dana dari Dinas" --> Pengelola
+    
+    %% Aliran dari Admin Dinas ke Sistem
+    Admin -- "alpha. Verifikasi Pembayaran Tiket Pengunjung" --> System
+    Admin -- "beta. Konfirmasi Transfer Pencairan Dana Desa" --> System
+    Admin -- "gamma. Publikasi Berita & Solusi Bantuan" --> System
+    
+    %% Aliran dari Sistem ke Admin Dinas
+    System -- "x. Monitoring Statistik & Pendapatan 57 Desa" --> Admin
+    System -- "y. Rekapitulasi Pengajuan Pencairan Seluruh Desa" --> Admin
+    System -- "z. Notifikasi Bukti Bayar Masuk" --> Admin

@@ -1,0 +1,94 @@
+flowchart LR
+    Guest(["Pengunjung\nGuest"])
+    Member(["Wisatawan\nMember"])
+    Pengelola(["Pengelola\n57 Desa Wisata"])
+    Admin(["Admin Dinas\nDispar Ciamis"])
+
+    subgraph SI ["Sistem Informasi & Reservasi E-Tiket 57 Desa Wisata Ciamis"]
+        subgraph SIE ["Sub-Sistem Informasi & Eksplorasi"]
+            UC1["Melihat Beranda & Destinasi Unggulan"]
+            UC2["Menjelajahi Katalog 57 Desa Wisata"]
+            UC3["Filter Destinasi per Desa, Kategori & Status"]
+            UC4["Membaca Berita & Agenda Wisata"]
+            UC5["Melihat FAQ & Pusat Bantuan"]
+            UC6["Cek Status Tiket via Kode Booking"]
+        end
+
+        subgraph SKI ["Sub-Sistem Keanggotaan & Wisatawan"]
+            UC7["Registrasi Akun Wisatawan"]
+            UC8["Login Akun Wisatawan"]
+            UC9["Mengelola Profil Pengguna"]
+            UC10["Memberikan Ulasan & Rating Destinasi"]
+            UC11["Mengajukan Tiket Pertanyaan atau Bantuan"]
+            UC12["Membuat Pesanan Tiket Masuk"]
+            UC13["Mengunggah Bukti Pembayaran Transfer"]
+            UC14["Melihat Daftar Tiket Saya"]
+            UC15["Mencetak / Unduh E-Ticket QR Code"]
+        end
+
+        subgraph SPD ["Sub-Sistem Pengelola Desa Wisata (57 Akun Desa)"]
+            UC_P1["Login Panel Pengelola Desa"]
+            UC_P2["Dashboard Statistik Kunjungan Desanya"]
+            UC_P3["Edit Deskripsi, Foto & Fasilitas Desa"]
+            UC_P4["Atur Jam Buka & Tarif Tiket Masuk"]
+            UC_P5["Input & Perbarui Nomor Rekening Bank Desa"]
+            UC_P6["Scan / Validasi E-Ticket Masuk Wisatawan"]
+            UC_P7["Pantau Laporan Pendapatan Tiket Desa"]
+            UC_P8["Ajukan Pencairan Dana Kas Desa ke Dispar"]
+        end
+
+        subgraph SMA ["Sub-Sistem Administrator Dinas Pariwisata"]
+            UC_A1["Login Panel Admin Dispar"]
+            UC_A2["Monitoring Statistik Kunjungan 57 Desa Wisata"]
+            UC_A3["Verifikasi Bukti Pembayaran Tiket Wisatawan"]
+            UC_A4["Rekap Permohonan Pencairan Dana 57 Desa"]
+            UC_A5["Konfirmasi Transfer Pencairan ke Rekening Desa"]
+            UC_A6["CRUD Berita & Publikasi Acara Wisata"]
+            UC_A7["Menjawab Tiket Bantuan Pengunjung"]
+        end
+    end
+
+    %% Relasi Guest
+    Guest --> UC1
+    Guest --> UC2
+    Guest --> UC3
+    Guest --> UC4
+    Guest --> UC5
+    Guest --> UC6
+    Guest --> UC7
+    Guest --> UC8
+    Guest --> UC11
+
+    %% Member extends Guest
+    Member -->|extends| Guest
+    Member --> UC9
+    Member --> UC10
+    Member --> UC12
+    Member --> UC13
+    Member --> UC14
+    Member --> UC15
+
+    %% Relasi Pengelola Desa
+    Pengelola --> UC_P1
+    Pengelola --> UC_P2
+    Pengelola --> UC_P3
+    Pengelola --> UC_P4
+    Pengelola --> UC_P5
+    Pengelola --> UC_P6
+    Pengelola --> UC_P7
+    Pengelola --> UC_P8
+
+    %% Relasi Admin Dinas
+    Admin --> UC_A1
+    Admin --> UC_A2
+    Admin --> UC_A3
+    Admin --> UC_A4
+    Admin --> UC_A5
+    Admin --> UC_A6
+    Admin --> UC_A7
+
+    %% Ketergantungan Alur Antar-Aktor
+    UC13 -.-> UC_A3
+    UC_P6 -.-> UC15
+    UC_P8 -.-> UC_A4
+    UC_A4 -.-> UC_A5

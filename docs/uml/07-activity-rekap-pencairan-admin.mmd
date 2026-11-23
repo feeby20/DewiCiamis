@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph Pengelola ["Aktor: Pengelola Desa Wisata"]
+        F1["Cek Saldo Kas Tiket yang Tersedia"]
+        F2["Pastikan Rekening Kas Desa / BUMDes Sudah Terisi"]
+        F3["Input Nominal Pencairan & Kirim Permohonan"]
+    end
+
+    subgraph Admin ["Aktor: Admin Dinas Pariwisata"]
+        F7["Buka Menu 'Pencairan Dana Desa' di Panel Admin"]
+        F8["Lihat Daftar Permohonan Masuk & Rekening Tujuan Desa"]
+        F9["Lakukan Transfer Dana melalui Kasda / Rekening Bank Dispar"]
+        F10["Klik 'Konfirmasi Transfer' & Upload Struk / Bukti Transfer"]
+    end
+
+    subgraph Sistem ["Sistem: Visit Ciamis (Laravel)"]
+        F4["Validasi: Nominal <= Saldo Tersedia & Rekening Lengkap"]
+        F5["Kurangi Saldo Tersedia Desa Sementara"]
+        F6["Buat Record Pencairan Status 'menunggu'"]
+        F11["Simpan Berkas Resi Transfer ke uploads/bukti_pencairan/"]
+        F12["Update Status Pencairan: 'disetujui'"]
+        F13["Tambahkan Nominal ke Saldo Dicairkan Desa"]
+        F14["Tampilkan Bukti Resi & Notifikasi Sukses ke Pengelola"]
+    end
+
+    F1 --> F2
+    F2 --> F3
+    F3 --> F4
+    F4 --> F5
+    F5 --> F6
+    F6 --> F7
+    F7 --> F8
+    F8 --> F9
+    F9 --> F10
+    F10 --> F11
+    F11 --> F12
+    F12 --> F13
+    F13 --> F14

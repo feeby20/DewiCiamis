@@ -1,0 +1,27 @@
+graph TD
+    subgraph LRS ["Logical Record Structure (LRS) - Visit Ciamis"]
+        USERS["<b>USERS</b><br/>-----------------------<br/><b>* id (PK)</b><br/>nama<br/>email<br/>password<br/>role<br/>created_at"]
+        
+        ORDERS["<b>ORDERS</b><br/>-----------------------<br/><b>* id (PK)</b><br/># user_id (FK)<br/>booking_code (UK)<br/>full_name<br/>whatsapp<br/>destination_name<br/>visit_date<br/>ticket_qty<br/>ticket_price<br/>total_price<br/>payment_status<br/>payment_proof<br/>created_at"]
+        
+        REVIEWS["<b>DESTINATION_REVIEWS</b><br/>-----------------------<br/><b>* id (PK)</b><br/># user_id (FK)<br/>user_name<br/>destination_name<br/>rating<br/>comment<br/>created_at"]
+        
+        PRICES["<b>DESTINATION_PRICES</b><br/>-----------------------<br/><b>* id (PK)</b><br/>destination_name (UK)<br/>ticket_price<br/>updated_at"]
+        
+        BERITA["<b>BERITA</b><br/>-----------------------<br/><b>* id (PK)</b><br/>judul<br/>ringkasan<br/>isi<br/>gambar<br/>tanggal<br/>created_at<br/>updated_at"]
+        
+        ADMINS["<b>ADMINS</b><br/>-----------------------<br/><b>* id (PK)</b><br/>email (UK)<br/>password_hash<br/>remember_token"]
+        
+        SUPPORT_MSG["<b>SUPPORT_MESSAGES</b><br/>-----------------------<br/><b>* id (PK)</b><br/>ticket_code (UK)<br/>name<br/>email<br/>topic<br/>subject<br/>message<br/>admin_reply<br/>status<br/>replied_at<br/>created_at<br/>updated_at"]
+        
+        SUPPORT_FAQS["<b>SUPPORT_FAQS</b><br/>-----------------------<br/><b>* id (PK)</b><br/>category<br/>question<br/>answer<br/>sort_order<br/>is_active<br/>created_at<br/>updated_at"]
+    end
+
+    %% Relasi Kunci Asosiasi
+    USERS -- "1 : N (user_id)" --> ORDERS
+    USERS -- "1 : N (user_id)" --> REVIEWS
+    PRICES -. "1 : N (destination_name)" .-> ORDERS
+    PRICES -. "1 : N (destination_name)" .-> REVIEWS
+    ADMINS -. "Manages" .-> BERITA
+    ADMINS -. "Verifies" .-> ORDERS
+    ADMINS -. "Answers" .-> SUPPORT_MSG

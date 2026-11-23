@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph Admin ["Aktor: Petugas Admin Dispar"]
+        C1["Buka Menu 'Kelola Berita'"]
+        C3["Klik Tombol 'Tambah Berita Baru'"]
+        C5["Isi Judul, Ringkasan, Konten Lengkap & Upload Gambar"]
+        C6["Klik Tombol 'Simpan / Publikasikan'"]
+        C11["Perbaiki Form Berdasarkan Pesan Error"]
+    end
+
+    subgraph Sistem ["Sistem: Visit Ciamis (Laravel)"]
+        C2["Tampilkan Tabel Daftar Berita yang Tersimpan"]
+        C4["Tampilkan Formulir Tambah Berita"]
+        C7{"Validasi Sistem: Judul Wajib, Gambar Max 2MB, Format Valid?"}
+        C8["Simpan Gambar Cover ke public/uploads/berita"]
+        C9["Simpan Record Baru ke Tabel 'berita'"]
+        C10["Redirect ke Daftar Berita & Beri Pesan Sukses"]
+        C12["Kembalikan ke Form & Beri Pesan Error Validasi"]
+    end
+
+    C1 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> C5
+    C5 --> C6
+    C6 --> C7
+    C7 -- "Valid" --> C8
+    C8 --> C9
+    C9 --> C10
+    C7 -- "Tidak Valid" --> C12
+    C12 --> C11
+    C11 --> C6

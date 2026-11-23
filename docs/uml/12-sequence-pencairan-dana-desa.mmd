@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor P as Pengelola Desa
+    actor A as Admin Dinas Dispar
+    participant FC as Pengelola\FinanceController
+    participant AC as Admin\PencairanDanaController
+    participant D as Model DesaWisata
+    participant W as Model PencairanDana
+    participant DB as MySQL Database
+
+    P->>FC: POST /pengelola/pencairan/ajukan (nominal=500000)
+    FC->>D: decrement('saldo_tersedia', 500000)
+    FC->>W: create(kode, desa_id, nominal=500000, bank, rek, status='menunggu')
+    W->>DB: INSERT INTO pencairan_dana
+    DB-->>FC: Created
+    FC-->>P: Flash Message "Permohonan Pencairan Terkirim ke Dinas"
+
+    A->>AC: GET /admin/pencairan
+    AC->>W: with(['desa', 'pengelola'])->where('status', 'menunggu')->get()
+    W->>DB: SELECT * FROM pencairan_dana WHERE status = 'menunggu'
+    DB-->>AC: Dataset Permohonan
+    AC-->>A: Tampilkan Permohonan & No Rekening Desa
+
+    Note over A: Admin Melakukan Transfer Dana via Kasda / Bank BJB
+
+    A->>AC: POST /admin/pencairan/{id}/konfirmasi (status='disetujui', file bukti_transfer)
+    AC->>W: update(status='disetujui', bukti_transfer=path, tanggal_konfirmasi=NOW())
+    AC->>D: increment('saldo_dicairkan', nominal)
+    W->>DB: UPDATE pencairan_dana & desa_wisata
+    DB-->>AC: Success
+    AC-->>A: Notifikasi "Pencairan Berhasil Dikonfirmasi"

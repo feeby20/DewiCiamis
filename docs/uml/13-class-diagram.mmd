@@ -1,0 +1,147 @@
+classDiagram
+    direction TB
+
+    class User {
+        +BigInteger id
+        +String nama
+        +String email
+        +String password
+        +String role
+        +String remember_token
+        +Timestamp created_at
+        +orders() HasMany
+        +reviews() HasMany
+    }
+
+    class PengelolaDesa {
+        +BigInteger id
+        +BigInteger desa_id
+        +String name
+        +String username
+        +String email
+        +String password
+        +String no_hp
+        +Boolean is_active
+        +desa() BelongsTo
+        +pencairanDana() HasMany
+        +validatedOrders() HasMany
+    }
+
+    class DesaWisata {
+        +BigInteger id
+        +String nama_desa
+        +String slug
+        +String kecamatan
+        +String sk_bupati
+        +String status_desa
+        +String kategori
+        +String destinasi_unggulan
+        +Text deskripsi
+        +String gambar
+        +String jam_buka
+        +String hari_operasional
+        +Integer harga_tiket
+        +String nama_bank
+        +String nomor_rekening
+        +String atas_nama_rekening
+        +Integer saldo_tersedia
+        +Integer saldo_dicairkan
+        +pengelola() HasOne
+        +orders() HasMany
+        +pencairanDana() HasMany
+    }
+
+    class PencairanDana {
+        +BigInteger id
+        +String kode_pencairan
+        +BigInteger desa_id
+        +BigInteger pengelola_id
+        +Integer nominal
+        +String bank_tujuan
+        +String nomor_rekening
+        +String atas_nama
+        +String status
+        +String bukti_transfer
+        +Text catatan_admin
+        +DateTime tanggal_pengajuan
+        +DateTime tanggal_konfirmasi
+        +desa() BelongsTo
+        +pengelola() BelongsTo
+    }
+
+    class Admin {
+        +Integer id
+        +String email
+        +String password_hash
+        +String remember_token
+        +getAuthPassword() String
+    }
+
+    class Order {
+        +BigInteger id
+        +BigInteger user_id
+        +BigInteger desa_id
+        +String booking_code
+        +String full_name
+        +String whatsapp
+        +String destination_name
+        +Date visit_date
+        +Integer ticket_qty
+        +Integer ticket_price
+        +Integer total_price
+        +String payment_status
+        +String payment_proof
+        +String ticket_status
+        +DateTime validated_at
+        +BigInteger validated_by
+        +user() BelongsTo
+        +desa() BelongsTo
+        +validator() BelongsTo
+    }
+
+    class DestinationReview {
+        +BigInteger id
+        +BigInteger user_id
+        +String user_name
+        +String destination_name
+        +Integer rating
+        +Text comment
+        +Timestamp created_at
+        +user() BelongsTo
+    }
+
+    class Berita {
+        +BigInteger id
+        +String judul
+        +String ringkasan
+        +LongText isi
+        +String gambar
+        +Date tanggal
+        +Timestamp created_at
+    }
+
+    class SupportMessage {
+        +BigInteger id
+        +String ticket_code
+        +String name
+        +String email
+        +String topic
+        +String subject
+        +Text message
+        +Text admin_reply
+        +String status
+        +DateTime replied_at
+    }
+
+    %% Relasi Antar Kelas
+    DesaWisata "1" <--> "1" PengelolaDesa : 1-to-1 Account
+    DesaWisata "1" --> "0..*" Order : hosts tickets
+    DesaWisata "1" --> "0..*" PencairanDana : requests withdrawal
+    PengelolaDesa "1" --> "0..*" PencairanDana : files
+    PengelolaDesa "1" --> "0..*" Order : validates check-in
+    User "1" --> "0..*" Order : books
+    User "1" --> "0..*" DestinationReview : writes
+    Admin "1" ..> "0..*" Order : verifies payment
+    Admin "1" ..> "0..*" PencairanDana : confirms settlement
+    Admin "1" ..> "0..*" Berita : publishes
+    Admin "1" ..> "0..*" SupportMessage : resolves

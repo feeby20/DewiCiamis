@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor Admin
+    actor Wisatawan
+    participant UI as Panel Admin
+    participant AOC as Admin\OrderController
+    participant DB as MySQL Database
+
+    Admin->>UI: Buka Halaman Verifikasi Pembayaran (/admin/orders/verifikasi)
+    UI->>AOC: verifikasi()
+    AOC->>DB: Query Order where payment_proof != null and payment_status != 'lunas'
+    DB-->>AOC: Daftar Pesanan Menunggu Verifikasi
+    AOC-->>UI: Render View admin.orders.verifikasi
+    
+    Admin->>UI: Periksa Foto Bukti Transfer & Klik 'Setujui (Lunas)'
+    UI->>AOC: POST /admin/orders/{id}/status (status: 'Lunas')
+    AOC->>DB: Order::findOrFail($id)->update(['payment_status' => 'Lunas'])
+    DB-->>AOC: Record Berhasil Diupdate
+    AOC-->>UI: Flash Message 'Status pesanan berhasil diubah menjadi Lunas'
+    
+    Wisatawan->>UI: Akses /tiket-saya atau /tiket/{booking}
+    UI->>DB: Query Order where booking_code & payment_status = 'Lunas'
+    DB-->>UI: Data Tiket Valid
+    UI-->>Wisatawan: Tampilkan E-Ticket Resmi Siap Cetak (Disertai QR Code)
