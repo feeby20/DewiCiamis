@@ -8,18 +8,21 @@ require_once __DIR__ . '/../config/database.php';
 $sudahLogin = isset($_SESSION['user_id']);
 $namaPengguna = $_SESSION['user_nama'] ?? 'Akun Saya';
 
-$namaDesa       = 'Desa Sagalaherang';
-$kecamatan      = 'Panumbangan';
-$namaDestinasi  = 'Pasir Boma Sagalaherang';
-$hargaTiket     = 7500;
+$namaDesa      = 'Desa Sagalaherang';
+$kecamatan     = 'Panawangan';
+$skBupati      = '143/Kpts.303-Huk/2021';
+$statusDesa    = 'Rintisan';
+$kategoriDesa  = 'Alam';
+$namaDestinasi = 'Paralayang';
+$hargaTiket    = 6500;
 
 // Ambil harga tiket dari database jika tersedia
 try {
     $stmtHarga = $pdo->prepare("
         SELECT ticket_price FROM destination_prices
-        WHERE destination_name = :nama LIMIT 1
+        WHERE destination_name LIKE :nama OR destination_name = :dname LIMIT 1
     ");
-    $stmtHarga->execute([':nama' => $namaDestinasi]);
+    $stmtHarga->execute([':nama' => "%$namaDestinasi%", ':dname' => $namaDestinasi]);
     $dataHarga = $stmtHarga->fetch(PDO::FETCH_ASSOC);
     if ($dataHarga && isset($dataHarga['ticket_price'])) {
         $hargaTiket = (int) $dataHarga['ticket_price'];
@@ -68,13 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_ulasan'])) {
 // Ambil ulasan
 $daftarUlasan = []; $jumlahUlasan = 0; $rataRating = 0;
 try {
-    $stmtR = $pdo->prepare("SELECT COUNT(*) AS jml, COALESCE(AVG(rating), 0) AS avg FROM destination_reviews WHERE destination_name = :d");
-    $stmtR->execute([':d' => $namaDestinasi]);
+    $stmtR = $pdo->prepare("SELECT COUNT(*) AS jml, COALESCE(AVG(rating), 0) AS avg FROM destination_reviews WHERE destination_name LIKE :d");
+    $stmtR->execute([':d' => "%$namaDestinasi%"]);
     $rowR = $stmtR->fetch(PDO::FETCH_ASSOC);
-    $jumlahUlasan = (int) $rowR['jml'];
-    $rataRating   = round((float) $rowR['avg'], 1);
-    $stmtU = $pdo->prepare("SELECT * FROM destination_reviews WHERE destination_name = :d ORDER BY created_at DESC LIMIT 20");
-    $stmtU->execute([':d' => $namaDestinasi]);
+    $jumlahUlasan = (int) ($rowR['jml'] ?? 0);
+    $rataRating   = round((float) ($rowR['avg'] ?? 0), 1);
+    $stmtU = $pdo->prepare("SELECT * FROM destination_reviews WHERE destination_name LIKE :d ORDER BY created_at DESC LIMIT 20");
+    $stmtU->execute([':d' => "%$namaDestinasi%"]);
     $daftarUlasan = $stmtU->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('Gagal mengambil ulasan: ' . $e->getMessage());
@@ -173,7 +176,7 @@ try {
         <div class="detail-hero-content">
             <div class="detail-category">
                 <i class="bi bi-house-heart-fill"></i>
-                DESA WISATA KABUPATEN CIAMIS
+                DESA WISATA KABUPATEN CIAMIS &bull; <?= strtoupper(htmlspecialchars($statusDesa)) ?>
             </div>
             <h1><?= htmlspecialchars($namaDesa) ?></h1>
             <div class="detail-location">
@@ -194,7 +197,7 @@ try {
 
                 <!-- FOTO BANNER DESA -->
                 <div class="detail-image-card mb-4" style="border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
-                    <img src="../pictures/destinasi/PasirBoma.jpeg" alt="<?= htmlspecialchars($namaDesa) ?>" class="detail-image" style="width: 100%; max-height: 420px; object-fit: cover;">
+                    <img src="../pictures/destinasi/ParalayangPanawangan.webp" alt="<?= htmlspecialchars($namaDesa) ?>" class="detail-image" style="width: 100%; max-height: 420px; object-fit: cover;">
                 </div>
                 <div class="photo-source mb-4">
                     <i class="bi bi-camera-fill"></i>
@@ -205,7 +208,8 @@ try {
                 <article class="detail-article mb-5">
                     <span class="article-label">PROFIL DESA WISATA</span>
                     <h2>Mengenal <?= htmlspecialchars($namaDesa) ?></h2>
-                    <p>Desa Sagalaherang di Kecamatan Panumbangan memiliki Pasir Boma sebagai destinasi wisata alam perbukitan yang populer. Desa ini memanfaatkan kekayaan alam hutan dan bukit untuk wisata trekking, bumi perkemahan, dan pengamatan alam yang menarik bagi wisatawan minat khusus.</p>
+                    <p>Wisata olahraga paralayang di ketinggian bukit Panawangan dengan sensasi terbang melintasi lanskap hijau.</p>
+                    <p>Secara administratif, <?= htmlspecialchars($namaDesa) ?> terletak di wilayah Kecamatan <?= htmlspecialchars($kecamatan) ?>, Kabupaten Ciamis, dan telah resmi dikukuhkan sebagai Desa Wisata berdasarkan ketetapan <strong>SK Bupati Ciamis No. <?= htmlspecialchars($skBupati) ?></strong> dengan status kategori <strong><?= htmlspecialchars($statusDesa) ?></strong>.</p>
                 </article>
 
                 <!-- KATALOG DESTINASI -->
@@ -220,19 +224,19 @@ try {
                         <span class="badge bg-success rounded-pill px-3 py-2">1 Destinasi Tersedia</span>
                     </div>
                     <p class="text-secondary small mb-4">
-                        Klik pada foto atau tombol destinasi untuk melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket</strong>:
+                        Klik pada foto atau tombol destinasi di bawah untuk menuju halaman khusus masing-masing destinasi, melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket</strong>:
                     </p>
                     <div class="row g-4">
 
-                        <!-- DESTINASI: Pasir Boma Sagalaherang -->
+                        <!-- DESTINASI: Paralayang -->
                         <div class="col-12">
-                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white">
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white border">
                                 <div class="row g-0 align-items-center">
                                     <div class="col-md-5">
-                                        <a href="../destinasi/pasir-boma" class="d-block overflow-hidden position-relative" style="height: 240px;">
-                                            <img src="../pictures/destinasi/PasirBoma.jpeg" alt="Pasir Boma Sagalaherang" class="w-100 h-100 object-fit-cover card-img-zoom">
+                                        <a href="../destinasi/paralayang" class="d-block overflow-hidden position-relative" style="height: 240px;">
+                                            <img src="../pictures/destinasi/ParalayangPanawangan.webp" alt="Paralayang" class="w-100 h-100 object-fit-cover card-img-zoom">
                                             <span class="badge bg-success position-absolute top-0 start-0 m-3 shadow-sm">
-                                                <i class="bi bi-tree-fill me-1"></i> Wisata Alam
+                                                <i class="bi bi-tree-fill me-1"></i> Alam
                                             </span>
                                             <span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-3 text-white small">
                                                 <i class="bi bi-cursor-fill me-1 text-warning"></i> Buka Halaman Destinasi
@@ -243,27 +247,30 @@ try {
                                         <div class="card-body p-4">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <h4 class="fw-bold text-dark mb-1">
-                                                    <a href="../destinasi/pasir-boma" class="text-dark text-decoration-none">Pasir Boma Sagalaherang</a>
+                                                    <a href="../destinasi/paralayang" class="text-dark text-decoration-none">
+                                                        Paralayang
+                                                    </a>
                                                 </h4>
-                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp 7.500</span>
+                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp <?= $hargaTiketFormat ?></span>
                                             </div>
                                             <small class="text-muted d-block mb-2">
-                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Sagalaherang, Kecamatan Panumbangan
+                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Sagalaherang, Kecamatan Panawangan
                                             </small>
                                             <p class="text-secondary small mb-3" style="line-height: 1.65;">
-                                                Perbukitan alami dengan hutan lebat dan pemandangan yang memukau. Cocok untuk kegiatan trekking, berkemah, dan pengamatan alam di kawasan perbukitan Panumbangan.
+                                                Spot landasan terbang paralayang dan gantole di Panawangan dengan pemandangan bentang alam perbukitan Ciamis utara yang spektakuler.
                                             </p>
                                             <div class="mb-3 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Jalur Trekking</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Area Camping</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Spot Pandang</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Warung Ringan</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Take-Off Deck</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Instruktur Tandem Berlisensi</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Spot Selfie Sunset</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kantin</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toilet</span>
                                             </div>
                                             <div class="d-flex gap-2 flex-wrap">
-                                                <a href="../destinasi/pasir-boma" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
+                                                <a href="../destinasi/paralayang" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
                                                     <i class="bi bi-eye-fill me-1"></i> Lihat Deskripsi, Galeri &amp; Fasilitas
                                                 </a>
-                                                <a href="../pemesanan.php?destinasi=pasir-boma" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
+                                                <a href="../pemesanan.php?destinasi=<?= urlencode('Paralayang') ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
                                                     <i class="bi bi-ticket-perforated me-1"></i> Pesan Tiket
                                                 </a>
                                             </div>
@@ -272,6 +279,7 @@ try {
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -304,8 +312,15 @@ try {
                         <div class="info-item">
                             <i class="bi bi-file-earmark-check-fill"></i>
                             <div>
-                                <span>Status</span>
-                                <strong>Desa Wisata Aktif</strong>
+                                <span>SK Penetapan Bupati</span>
+                                <strong><?= htmlspecialchars($skBupati) ?></strong>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-award-fill"></i>
+                            <div>
+                                <span>Status Kategori</span>
+                                <span class="badge bg-success-subtle text-success fw-semibold"><?= htmlspecialchars($statusDesa) ?></span>
                             </div>
                         </div>
                         <div class="info-item">
@@ -331,7 +346,7 @@ try {
                             <i class="bi bi-clock-fill"></i>
                             <div>
                                 <span>Jam Operasional</span>
-                                <strong>07.00 – 17.00 WIB</strong>
+                                <strong>08.00 – 17.00 WIB</strong>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -346,7 +361,7 @@ try {
                         <div class="text-center py-2">
                             <i class="bi bi-compass-fill" style="font-size: 2rem; opacity: 0.8;"></i>
                             <h5 class="fw-bold mt-2 mb-1">Jelajahi <?= htmlspecialchars($namaDesa) ?></h5>
-                            <p class="small mb-3 opacity-75">Nikmati keindahan alam dan budaya <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>.</p>
+                            <p class="small mb-3 opacity-75">Nikmati pesona alam dan kearifan lokal di <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>.</p>
                             <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($namaDesa . ' ' . $kecamatan . ' Ciamis') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-light btn-sm rounded-pill px-4 fw-semibold text-success">
                                 <i class="bi bi-geo-alt-fill me-1"></i> Lihat Lokasi
                             </a>

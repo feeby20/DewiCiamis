@@ -8,18 +8,21 @@ require_once __DIR__ . '/../config/database.php';
 $sudahLogin = isset($_SESSION['user_id']);
 $namaPengguna = $_SESSION['user_nama'] ?? 'Akun Saya';
 
-$namaDesa       = 'Desa Cisontrol';
-$kecamatan      = 'Rancah';
-$namaDestinasi  = 'Wisata Edukasi Anak Cisontrol';
-$hargaTiket     = 7500;
+$namaDesa      = 'Desa Cisontrol';
+$kecamatan     = 'Rancah';
+$skBupati      = '446/Kpts.232-Huk/2020';
+$statusDesa    = 'Berkembang';
+$kategoriDesa  = 'Buatan';
+$namaDestinasi = 'Wisata Edukasi Anak';
+$hargaTiket    = 6500;
 
 // Ambil harga tiket dari database jika tersedia
 try {
     $stmtHarga = $pdo->prepare("
         SELECT ticket_price FROM destination_prices
-        WHERE destination_name = :nama LIMIT 1
+        WHERE destination_name LIKE :nama OR destination_name = :dname LIMIT 1
     ");
-    $stmtHarga->execute([':nama' => $namaDestinasi]);
+    $stmtHarga->execute([':nama' => "%$namaDestinasi%", ':dname' => $namaDestinasi]);
     $dataHarga = $stmtHarga->fetch(PDO::FETCH_ASSOC);
     if ($dataHarga && isset($dataHarga['ticket_price'])) {
         $hargaTiket = (int) $dataHarga['ticket_price'];
@@ -68,13 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_ulasan'])) {
 // Ambil ulasan
 $daftarUlasan = []; $jumlahUlasan = 0; $rataRating = 0;
 try {
-    $stmtR = $pdo->prepare("SELECT COUNT(*) AS jml, COALESCE(AVG(rating), 0) AS avg FROM destination_reviews WHERE destination_name = :d");
-    $stmtR->execute([':d' => $namaDestinasi]);
+    $stmtR = $pdo->prepare("SELECT COUNT(*) AS jml, COALESCE(AVG(rating), 0) AS avg FROM destination_reviews WHERE destination_name LIKE :d");
+    $stmtR->execute([':d' => "%$namaDestinasi%"]);
     $rowR = $stmtR->fetch(PDO::FETCH_ASSOC);
-    $jumlahUlasan = (int) $rowR['jml'];
-    $rataRating   = round((float) $rowR['avg'], 1);
-    $stmtU = $pdo->prepare("SELECT * FROM destination_reviews WHERE destination_name = :d ORDER BY created_at DESC LIMIT 20");
-    $stmtU->execute([':d' => $namaDestinasi]);
+    $jumlahUlasan = (int) ($rowR['jml'] ?? 0);
+    $rataRating   = round((float) ($rowR['avg'] ?? 0), 1);
+    $stmtU = $pdo->prepare("SELECT * FROM destination_reviews WHERE destination_name LIKE :d ORDER BY created_at DESC LIMIT 20");
+    $stmtU->execute([':d' => "%$namaDestinasi%"]);
     $daftarUlasan = $stmtU->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log('Gagal mengambil ulasan: ' . $e->getMessage());
@@ -173,7 +176,7 @@ try {
         <div class="detail-hero-content">
             <div class="detail-category">
                 <i class="bi bi-house-heart-fill"></i>
-                DESA WISATA KABUPATEN CIAMIS
+                DESA WISATA KABUPATEN CIAMIS &bull; <?= strtoupper(htmlspecialchars($statusDesa)) ?>
             </div>
             <h1><?= htmlspecialchars($namaDesa) ?></h1>
             <div class="detail-location">
@@ -205,7 +208,8 @@ try {
                 <article class="detail-article mb-5">
                     <span class="article-label">PROFIL DESA WISATA</span>
                     <h2>Mengenal <?= htmlspecialchars($namaDesa) ?></h2>
-                    <p>Desa Cisontrol di Kecamatan Rancah mengembangkan wisata edukasi berbasis anak dan keluarga yang inovatif. Desa ini memiliki fasilitas wisata edukasi yang dirancang untuk merangsang kreativitas dan kecintaan anak-anak terhadap alam dan seni, menjadikannya pilihan tepat untuk wisata sekolah dan liburan keluarga yang bermakna.</p>
+                    <p>Taman rekreasi dan edukasi terpadu untuk anak-anak sekolah dengan konsep belajar sambil bermain di alam terbuka.</p>
+                    <p>Secara administratif, <?= htmlspecialchars($namaDesa) ?> terletak di wilayah Kecamatan <?= htmlspecialchars($kecamatan) ?>, Kabupaten Ciamis, dan telah resmi dikukuhkan sebagai Desa Wisata berdasarkan ketetapan <strong>SK Bupati Ciamis No. <?= htmlspecialchars($skBupati) ?></strong> dengan status kategori <strong><?= htmlspecialchars($statusDesa) ?></strong>.</p>
                 </article>
 
                 <!-- KATALOG DESTINASI -->
@@ -220,19 +224,19 @@ try {
                         <span class="badge bg-success rounded-pill px-3 py-2">1 Destinasi Tersedia</span>
                     </div>
                     <p class="text-secondary small mb-4">
-                        Klik pada foto atau tombol destinasi untuk melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket</strong>:
+                        Klik pada foto atau tombol destinasi di bawah untuk menuju halaman khusus masing-masing destinasi, melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket</strong>:
                     </p>
                     <div class="row g-4">
 
-                        <!-- DESTINASI: Wisata Edukasi Anak Cisontrol -->
+                        <!-- DESTINASI: Wisata Edukasi Anak -->
                         <div class="col-12">
-                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white">
+                            <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white border">
                                 <div class="row g-0 align-items-center">
                                     <div class="col-md-5">
-                                        <a href="../destinasi/wisata-edukasi-cisontrol" class="d-block overflow-hidden position-relative" style="height: 240px;">
-                                            <img src="../pictures/destinasi/WisataEdukasiAnakCisontol.jpeg" alt="Wisata Edukasi Anak Cisontrol" class="w-100 h-100 object-fit-cover card-img-zoom">
-                                            <span class="badge bg-info position-absolute top-0 start-0 m-3 shadow-sm">
-                                                <i class="bi bi-book-half me-1"></i> Wisata Edukasi
+                                        <a href="../destinasi/wisata-edukasi-anak" class="d-block overflow-hidden position-relative" style="height: 240px;">
+                                            <img src="../pictures/destinasi/WisataEdukasiAnakCisontol.jpeg" alt="Wisata Edukasi Anak" class="w-100 h-100 object-fit-cover card-img-zoom">
+                                            <span class="badge bg-primary position-absolute top-0 start-0 m-3 shadow-sm">
+                                                <i class="bi bi-building me-1"></i> Buatan
                                             </span>
                                             <span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-3 text-white small">
                                                 <i class="bi bi-cursor-fill me-1 text-warning"></i> Buka Halaman Destinasi
@@ -243,27 +247,30 @@ try {
                                         <div class="card-body p-4">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <h4 class="fw-bold text-dark mb-1">
-                                                    <a href="../destinasi/wisata-edukasi-cisontrol" class="text-dark text-decoration-none">Wisata Edukasi Anak Cisontrol</a>
+                                                    <a href="../destinasi/wisata-edukasi-anak" class="text-dark text-decoration-none">
+                                                        Wisata Edukasi Anak
+                                                    </a>
                                                 </h4>
-                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp 7.500</span>
+                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp <?= $hargaTiketFormat ?></span>
                                             </div>
                                             <small class="text-muted d-block mb-2">
                                                 <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Cisontrol, Kecamatan Rancah
                                             </small>
                                             <p class="text-secondary small mb-3" style="line-height: 1.65;">
-                                                Kawasan wisata edukasi interaktif untuk anak dan keluarga dengan berbagai wahana kreatif. Menggabungkan pengalaman belajar dan bermain dalam suasana alam pedesaan yang menyenangkan.
+                                                Taman bermain edukatif ruang terbuka yang dilengkapi wahana interaktif ramah anak, kolam air, dan area pengenalan satwa ternak.
                                             </p>
                                             <div class="mb-3 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Wahana Edukasi Interaktif</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Area Bermain Anak</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Galeri Karya Anak</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kantin Keluarga</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Wahana Bermain Anak</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kolam Air Anak</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Gazebo Keluarga</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kantin Ramah Anak</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toilet Bersih</span>
                                             </div>
                                             <div class="d-flex gap-2 flex-wrap">
-                                                <a href="../destinasi/wisata-edukasi-cisontrol" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
+                                                <a href="../destinasi/wisata-edukasi-anak" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
                                                     <i class="bi bi-eye-fill me-1"></i> Lihat Deskripsi, Galeri &amp; Fasilitas
                                                 </a>
-                                                <a href="../pemesanan.php?destinasi=wisata-edukasi-cisontrol" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
+                                                <a href="../pemesanan.php?destinasi=<?= urlencode('Wisata Edukasi Anak') ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
                                                     <i class="bi bi-ticket-perforated me-1"></i> Pesan Tiket
                                                 </a>
                                             </div>
@@ -272,6 +279,7 @@ try {
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -304,8 +312,15 @@ try {
                         <div class="info-item">
                             <i class="bi bi-file-earmark-check-fill"></i>
                             <div>
-                                <span>Status</span>
-                                <strong>Desa Wisata Aktif</strong>
+                                <span>SK Penetapan Bupati</span>
+                                <strong><?= htmlspecialchars($skBupati) ?></strong>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-award-fill"></i>
+                            <div>
+                                <span>Status Kategori</span>
+                                <span class="badge bg-success-subtle text-success fw-semibold"><?= htmlspecialchars($statusDesa) ?></span>
                             </div>
                         </div>
                         <div class="info-item">
@@ -331,7 +346,7 @@ try {
                             <i class="bi bi-clock-fill"></i>
                             <div>
                                 <span>Jam Operasional</span>
-                                <strong>07.00 – 17.00 WIB</strong>
+                                <strong>08.00 – 17.00 WIB</strong>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -346,7 +361,7 @@ try {
                         <div class="text-center py-2">
                             <i class="bi bi-compass-fill" style="font-size: 2rem; opacity: 0.8;"></i>
                             <h5 class="fw-bold mt-2 mb-1">Jelajahi <?= htmlspecialchars($namaDesa) ?></h5>
-                            <p class="small mb-3 opacity-75">Nikmati keindahan alam dan budaya <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>.</p>
+                            <p class="small mb-3 opacity-75">Nikmati pesona alam dan kearifan lokal di <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>.</p>
                             <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($namaDesa . ' ' . $kecamatan . ' Ciamis') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-light btn-sm rounded-pill px-4 fw-semibold text-success">
                                 <i class="bi bi-geo-alt-fill me-1"></i> Lihat Lokasi
                             </a>

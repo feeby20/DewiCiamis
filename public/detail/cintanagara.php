@@ -1,4 +1,3 @@
-
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,554 +8,156 @@ require_once __DIR__ . '/../config/database.php';
 $sudahLogin = isset($_SESSION['user_id']);
 $namaPengguna = $_SESSION['user_nama'] ?? 'Akun Saya';
 
-$namaDestinasi = 'Wisata Alam, Agrowisata & Jalan Usaha Tani';
+$namaDesa      = 'Desa Cintanagara';
+$kecamatan     = 'Jatinagara';
+$skBupati      = '446/Kpts.232-Huk/2020';
+$statusDesa    = 'Rintisan';
+$kategoriDesa  = 'Alam';
+$namaDestinasi = 'Wisata Alam';
+$hargaTiket    = 6500;
 
-// ========================================
-// TOKEN CSRF ULASAN
-// ========================================
+// Ambil harga tiket dari database jika tersedia
+try {
+    $stmtHarga = $pdo->prepare("
+        SELECT ticket_price FROM destination_prices
+        WHERE destination_name LIKE :nama OR destination_name = :dname LIMIT 1
+    ");
+    $stmtHarga->execute([':nama' => "%$namaDestinasi%", ':dname' => $namaDestinasi]);
+    $dataHarga = $stmtHarga->fetch(PDO::FETCH_ASSOC);
+    if ($dataHarga && isset($dataHarga['ticket_price'])) {
+        $hargaTiket = (int) $dataHarga['ticket_price'];
+    }
+} catch (PDOException $e) {
+    error_log('Harga tiket gagal dimuat: ' . $e->getMessage());
+}
 
+$hargaTiketFormat = number_format($hargaTiket, 0, ',', '.');
+
+// CSRF & ulasan
 if (empty($_SESSION['review_csrf'])) {
     $_SESSION['review_csrf'] = bin2hex(random_bytes(32));
 }
 
-// ========================================
-// PROSES KIRIM ULASAN
-// ========================================
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_ulasan'])) {
-
-    if (!$sudahLogin) {
-        header('Location: ../masuk.php');
-        exit;
-    }
-
-    $token = $_POST['review_csrf'] ?? '';
-    $rating = (int) ($_POST['rating'] ?? 0);
-    $komentar = trim($_POST['comment'] ?? '');
-
-    $panjangKomentar = function_exists('mb_strlen')
-        ? mb_strlen($komentar, 'UTF-8')
-        : strlen($komentar);
-
-    if (!hash_equals($_SESSION['review_csrf'], $token)) {
-
-        $_SESSION['review_message'] = [
-            'type' => 'danger',
-            'text' => 'Permintaan tidak valid. Silakan coba kembali.'
-        ];
-
-    } elseif ($rating < 1 || $rating > 5) {
-
-        $_SESSION['review_message'] = [
-            'type' => 'danger',
-            'text' => 'Silakan pilih rating bintang 1 sampai 5.'
-        ];
-
-    } elseif ($komentar === '') {
-
-        $_SESSION['review_message'] = [
-            'type' => 'danger',
-            'text' => 'Komentar ulasan tidak boleh kosong.'
-        ];
-
-    } elseif ($panjangKomentar > 1000) {
-
-        $_SESSION['review_message'] = [
-            'type' => 'danger',
-            'text' => 'Komentar maksimal 1000 karakter.'
-        ];
-
-    } else {
-
-        try {
-
-            $stmtUlasan = $pdo->prepare("
-                INSERT INTO destination_reviews
-                (
-                    user_id,
-                    user_name,
-                    destination_name,
-                    rating,
-                    comment
-                )
-                VALUES
-                (
-                    :user_id,
-                    :user_name,
-                    :destination_name,
-                    :rating,
-                    :comment
-                )
-            ");
-
-            $stmtUlasan->execute([
-                ':user_id' => $_SESSION['user_id'],
-                ':user_name' => $namaPengguna,
-                ':destination_name' => $namaDestinasi,
-                ':rating' => $rating,
-                ':comment' => $komentar
-            ]);
-
-            $_SESSION['review_message'] = [
-                'type' => 'success',
-                'text' => 'Terima kasih! Ulasan kamu berhasil dikirim.'
-            ];
-
-            $_SESSION['review_csrf'] = bin2hex(random_bytes(32));
-
-        } catch (PDOException $e) {
-
-            error_log('Gagal menyimpan ulasan Cintanagara: ' . $e->getMessage());
-
-            $_SESSION['review_message'] = [
-                'type' => 'danger',
-                'text' => 'Ulasan gagal dikirim. Silakan coba beberapa saat lagi.'
-            ];
-        }
-    }
-
-    header('Location: cintanagara.php?ulasan=1#ulasan');
-    exit;
-}
-
-// ========================================
-// AMBIL PESAN NOTIFIKASI
-// ========================================
-
 $pesanUlasan = $_SESSION['review_message'] ?? null;
 unset($_SESSION['review_message']);
 
-// ========================================
-// AMBIL DAFTAR ULASAN
-// ========================================
-
-$daftarUlasan = [];
-$jumlahUlasan = 0;
-$rataRating = 0;
-
-try {
-
-    $stmtRating = $pdo->prepare("
-        SELECT
-            COUNT(*) AS jumlah_ulasan,
-            COALESCE(AVG(rating), 0) AS rata_rating
-        FROM destination_reviews
-        WHERE destination_name = :destination_name
-    ");
-
-    $stmtRating->execute([
-        ':destination_name' => $namaDestinasi
-    ]);
-
-    $dataRating = $stmtRating->fetch(PDO::FETCH_ASSOC);
-
-    if ($dataRating) {
-        $jumlahUlasan = (int) $dataRating['jumlah_ulasan'];
-        $rataRating = (float) $dataRating['rata_rating'];
+// Proses kirim ulasan
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_ulasan'])) {
+    if (!$sudahLogin) { header('Location: ../masuk.php'); exit; }
+    $token    = $_POST['review_csrf'] ?? '';
+    $rating   = (int) ($_POST['rating'] ?? 0);
+    $komentar = trim($_POST['comment'] ?? '');
+    if (!hash_equals($_SESSION['review_csrf'], $token)) {
+        $_SESSION['review_message'] = ['type' => 'danger', 'text' => 'Permintaan tidak valid. Silakan coba kembali.'];
+    } elseif ($rating < 1 || $rating > 5) {
+        $_SESSION['review_message'] = ['type' => 'danger', 'text' => 'Silakan pilih rating bintang 1 sampai 5.'];
+    } elseif ($komentar === '') {
+        $_SESSION['review_message'] = ['type' => 'danger', 'text' => 'Komentar ulasan tidak boleh kosong.'];
+    } elseif (mb_strlen($komentar) > 1000) {
+        $_SESSION['review_message'] = ['type' => 'danger', 'text' => 'Komentar maksimal 1000 karakter.'];
+    } else {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO destination_reviews (user_id, user_name, destination_name, rating, comment) VALUES (:uid, :uname, :dname, :rating, :comment)");
+            $stmt->execute([':uid' => $_SESSION['user_id'], ':uname' => $namaPengguna, ':dname' => $namaDestinasi, ':rating' => $rating, ':comment' => $komentar]);
+            $_SESSION['review_message'] = ['type' => 'success', 'text' => 'Terima kasih! Ulasan kamu berhasil dikirim.'];
+            $_SESSION['review_csrf'] = bin2hex(random_bytes(32));
+        } catch (PDOException $e) {
+            $_SESSION['review_message'] = ['type' => 'danger', 'text' => 'Ulasan gagal dikirim. Silakan coba lagi.'];
+        }
     }
-
-    $stmtDaftar = $pdo->prepare("
-        SELECT
-            user_name,
-            rating,
-            comment,
-            created_at
-        FROM destination_reviews
-        WHERE destination_name = :destination_name
-        ORDER BY created_at DESC
-    ");
-
-    $stmtDaftar->execute([
-        ':destination_name' => $namaDestinasi
-    ]);
-
-    $daftarUlasan = $stmtDaftar->fetchAll(PDO::FETCH_ASSOC);
-
-} catch (PDOException $e) {
-
-    error_log('Gagal mengambil ulasan Cintanagara: ' . $e->getMessage());
+    header('Location: cintanagara.php?ulasan=1#ulasan'); exit;
 }
 
+// Ambil ulasan
+$daftarUlasan = []; $jumlahUlasan = 0; $rataRating = 0;
+try {
+    $stmtR = $pdo->prepare("SELECT COUNT(*) AS jml, COALESCE(AVG(rating), 0) AS avg FROM destination_reviews WHERE destination_name LIKE :d");
+    $stmtR->execute([':d' => "%$namaDestinasi%"]);
+    $rowR = $stmtR->fetch(PDO::FETCH_ASSOC);
+    $jumlahUlasan = (int) ($rowR['jml'] ?? 0);
+    $rataRating   = round((float) ($rowR['avg'] ?? 0), 1);
+    $stmtU = $pdo->prepare("SELECT * FROM destination_reviews WHERE destination_name LIKE :d ORDER BY created_at DESC LIMIT 20");
+    $stmtU->execute([':d' => "%$namaDestinasi%"]);
+    $daftarUlasan = $stmtU->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('Gagal mengambil ulasan: ' . $e->getMessage());
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Wisata Alam Cintanagara | DewiCiamis</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <title><?= htmlspecialchars($namaDesa) ?> | DewiCiamis - Desa Wisata Kabupaten Ciamis</title>
+    <meta name="description" content="Jelajahi potensi wisata <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>, Kabupaten Ciamis. Temukan destinasi, fasilitas, galeri foto, dan pemesanan tiket.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/detail.css">
-
     <style>
-        .review-section {
-            padding: 70px 0;
-            background: #f8faf9;
-        }
-
-        .review-heading {
-            margin-bottom: 30px;
-        }
-
-        .review-heading h2 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #174b38;
-            margin-bottom: 8px;
-        }
-
-        .review-heading p {
-            color: #6c757d;
-            margin-bottom: 0;
-        }
-
-        .review-summary {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 15px;
-            border: 1px solid #e9eeeb;
-            margin-bottom: 25px;
-        }
-
-        .review-average {
-            font-size: 48px;
-            font-weight: 700;
-            color: #174b38;
-            line-height: 1;
-        }
-
-        .review-stars {
-            color: #f5b301;
-            font-size: 18px;
-            letter-spacing: 2px;
-        }
-
-        .review-total {
-            color: #777;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .review-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .review-item {
-            background: #ffffff;
-            padding: 22px;
-            border-radius: 14px;
-            border: 1px solid #e9eeeb;
-        }
-
-        .review-user {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .review-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: #e5f3eb;
-            color: #176b45;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .review-user-info strong {
-            display: block;
-            color: #26352d;
-            font-size: 15px;
-        }
-
-        .review-user-info small {
-            color: #999;
-            font-size: 12px;
-        }
-
-        .review-item .review-stars {
-            font-size: 15px;
-            margin-bottom: 10px;
-        }
-
-        .review-comment {
-            color: #555;
-            font-size: 14px;
-            line-height: 1.7;
-            margin-bottom: 0;
-            overflow-wrap: anywhere;
-        }
-
-        .review-form-card {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 15px;
-            border: 1px solid #e9eeeb;
-            margin-top: 25px;
-        }
-
-        .review-form-card h3 {
-            color: #174b38;
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 18px;
-        }
-
-        .rating-input {
-            display: flex;
-            flex-direction: row-reverse;
-            justify-content: flex-end;
-            gap: 5px;
-            margin-bottom: 18px;
-        }
-
-        .rating-input input {
-            display: none;
-        }
-
-        .rating-input label {
-            font-size: 32px;
-            color: #d6d6d6;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .rating-input label:hover,
-        .rating-input label:hover ~ label,
-        .rating-input input:checked ~ label {
-            color: #f5b301;
-        }
-
-        .review-form-card textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .review-submit {
-            background: #176b45;
-            color: #ffffff;
-            border: none;
-            padding: 11px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .review-submit:hover {
-            background: #105536;
-            color: #ffffff;
-        }
-
-        .review-empty {
-            background: #ffffff;
-            text-align: center;
-            padding: 35px 20px;
-            border: 1px dashed #d9e2dc;
-            border-radius: 14px;
-            color: #777;
-        }
-
-        .review-empty i {
-            display: block;
-            font-size: 35px;
-            color: #a5b9ac;
-            margin-bottom: 10px;
-        }
-
-        .review-alert {
-            margin-bottom: 20px;
-            border-radius: 10px;
-        }
-
-        .review-login {
-            margin-top: 25px;
-            padding: 22px;
-            background: #ffffff;
-            border: 1px solid #e9eeeb;
-            border-radius: 14px;
-        }
-
-        @media (max-width: 576px) {
-            .review-section {
-                padding: 45px 0;
-            }
-
-            .review-summary {
-                padding: 20px;
-                gap: 15px;
-            }
-
-            .review-average {
-                font-size: 40px;
-            }
-
-            .review-item,
-            .review-form-card {
-                padding: 18px;
-            }
-
-            .review-heading h2 {
-                font-size: 24px;
-            }
+        .destinasi-card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .destinasi-card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12) !important; }
+        .card-img-zoom { transition: transform 0.4s ease; }
+        .destinasi-card-hover:hover .card-img-zoom { transform: scale(1.06); }
+        .review-section { padding: 65px 0; background: #f8faf9; }
+        .review-heading h2 { font-size: 26px; font-weight: 700; color: #174b38; margin-bottom: 8px; }
+        .review-summary { display: flex; align-items: center; gap: 20px; background: #fff; padding: 22px; border-radius: 15px; border: 1px solid #e9eeeb; margin-bottom: 22px; }
+        .review-average { font-size: 46px; font-weight: 700; color: #174b38; line-height: 1; }
+        .review-stars { color: #f5b301; font-size: 17px; letter-spacing: 2px; }
+        .review-total { color: #777; font-size: 13px; margin-top: 4px; }
+        .review-item { background: #fff; padding: 20px; border-radius: 14px; border: 1px solid #e9eeeb; margin-bottom: 14px; }
+        .review-avatar { width: 44px; height: 44px; border-radius: 50%; background: #e5f3eb; color: #176b45; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .review-form-card { background: #fff; padding: 24px; border-radius: 15px; border: 1px solid #e9eeeb; margin-top: 22px; }
+        .review-form-card h3 { color: #174b38; font-size: 19px; font-weight: 700; margin-bottom: 16px; }
+        .rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; margin-bottom: 16px; }
+        .rating-input input { display: none; }
+        .rating-input label { font-size: 30px; color: #d6d6d6; cursor: pointer; transition: 0.2s; }
+        .rating-input label:hover, .rating-input label:hover ~ label, .rating-input input:checked ~ label { color: #f5b301; }
+        @media (max-width: 768px) {
+            .card .row.g-0 { flex-direction: column; }
+            .card .col-md-5 { min-height: 220px; }
+            .card .col-md-5 a { height: 220px !important; }
         }
     </style>
 </head>
-
 <body>
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="navbar">
     <div class="container">
-
         <a class="navbar-brand logo" href="../index.php">
             <img src="../pictures/LogoDispar.png" alt="Logo Desa Wisata Kabupaten Ciamis">
         </a>
-
-        <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
-            aria-controls="navbarNav"
-            aria-expanded="false"
-            aria-label="Buka navigasi"
-        >
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Buka navigasi">
             <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../index.php">Beranda</a>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a
-                        class="nav-link dropdown-toggle active"
-                        href="../destinasi.php"
-                        id="destinasiDropdown"
-                        role="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                    >
-                        Destinasi
+                <li class="nav-item"><a class="nav-link" href="../index.php">Beranda</a></li>
+                <li class="nav-item"><a class="nav-link active" href="../destinasi.php">Desa Wisata</a></li>
+                <li class="nav-item"><a class="nav-link" href="../berita.php">Berita</a></li>
+                <li class="nav-item"><a class="nav-link" href="../pemesanan.php">Tiket</a></li>
+                <li class="nav-item"><a class="nav-link" href="../pusat-bantuan.php">Pusat Bantuan</a></li>
+                <?php if ($sudahLogin): ?>
+                <li class="nav-item dropdown ms-lg-2">
+                    <a class="nav-link dropdown-toggle" href="#" id="akunDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($namaPengguna, ENT_QUOTES, 'UTF-8') ?>
                     </a>
-
-                    <ul class="dropdown-menu" aria-labelledby="destinasiDropdown">
-
-                        <li>
-                            <a class="dropdown-item" href="../destinasi.php">
-                                <i class="bi bi-grid-fill me-2"></i>
-                                Semua Wisata
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item" href="../destinasi.php?kategori=Alam">
-                                <i class="bi bi-tree-fill me-2"></i>
-                                Wisata Alam
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item" href="../destinasi.php?kategori=Buatan">
-                                <i class="bi bi-building me-2"></i>
-                                Wisata Buatan
-                            </a>
-                        </li>
-
-                        <li>
-                            <a class="dropdown-item" href="../destinasi.php?kategori=Sejarah%20%26%20Budaya">
-                                <i class="bi bi-bank me-2"></i>
-                                Sejarah &amp; Budaya
-                            </a>
-                        </li>
-
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="akunDropdown">
+                        <li><a class="dropdown-item" href="../akun-saya.php"><i class="bi bi-person-circle me-2"></i>Akun Saya</a></li>
+                        <li><a class="dropdown-item" href="../tiket-saya.php"><i class="bi bi-ticket-perforated me-2"></i>Tiket Saya</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="../keluar.php"><i class="bi bi-box-arrow-right me-2"></i>Keluar</a></li>
                     </ul>
                 </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../berita.php">Berita</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../pemesanan.php">Tiket</a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="../pusat-bantuan.php">Pusat Bantuan</a>
-                </li>
-
-                <?php if ($sudahLogin): ?>
-
-                    <li class="nav-item dropdown ms-lg-2">
-                        <a
-                            class="nav-link dropdown-toggle"
-                            href="#"
-                            id="akunDropdown"
-                            role="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                        >
-                            <i class="bi bi-person-circle me-1"></i>
-                            <?= htmlspecialchars($namaPengguna, ENT_QUOTES, 'UTF-8') ?>
-                        </a>
-
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="akunDropdown">
-
-                            <li>
-                                <a class="dropdown-item" href="../akun-saya.php">
-                                    <i class="bi bi-person-circle me-2"></i>
-                                    Akun Saya
-                                </a>
-                            </li>
-
-                            <li><hr class="dropdown-divider"></li>
-
-                            <li>
-                                <a class="dropdown-item text-danger" href="../keluar.php">
-                                    <i class="bi bi-box-arrow-right me-2"></i>
-                                    Keluar
-                                </a>
-                            </li>
-
-                        </ul>
-                    </li>
-
                 <?php else: ?>
-
-                    <li class="nav-item d-none d-lg-block">
-                        <span class="nav-link text-secondary">|</span>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="../masuk.php">Masuk</a>
-                    </li>
-
-                    <li class="nav-item ms-lg-2">
-                        <a class="btn btn-primary px-4" href="../daftar.php">Daftar</a>
-                    </li>
-
+                <li class="nav-item d-none d-lg-block"><span class="nav-link text-secondary">|</span></li>
+                <li class="nav-item"><a class="nav-link" href="../masuk.php">Masuk</a></li>
+                <li class="nav-item ms-lg-2"><a class="btn btn-primary px-4" href="../daftar.php">Daftar</a></li>
                 <?php endif; ?>
-
             </ul>
         </div>
     </div>
@@ -565,34 +166,28 @@ try {
 <!-- HERO -->
 <section class="detail-hero">
     <div class="container">
-
         <div class="breadcrumb-detail">
             <a href="../index.php">Beranda</a>
             <i class="bi bi-chevron-right"></i>
             <a href="../destinasi.php">Desa Wisata</a>
             <i class="bi bi-chevron-right"></i>
-            <span>Desa Cintanagara</span>
+            <span><?= htmlspecialchars($namaDesa) ?></span>
         </div>
-
         <div class="detail-hero-content">
-
             <div class="detail-category">
-                <i class="bi bi-tree-fill"></i>
-                DESA WISATA KABUPATEN CIAMIS
+                <i class="bi bi-house-heart-fill"></i>
+                DESA WISATA KABUPATEN CIAMIS &bull; <?= strtoupper(htmlspecialchars($statusDesa)) ?>
             </div>
-
-            <h1>Desa Wisata Cintanagara</h1>
-
+            <h1><?= htmlspecialchars($namaDesa) ?></h1>
             <div class="detail-location">
                 <i class="bi bi-geo-alt-fill"></i>
-                Kecamatan Jatinagara, Kabupaten Ciamis, Jawa Barat
+                Kecamatan <?= htmlspecialchars($kecamatan) ?>, Kabupaten Ciamis, Jawa Barat
             </div>
-
         </div>
     </div>
 </section>
 
-<!-- KONTEN DETAIL -->
+<!-- KONTEN UTAMA -->
 <main class="detail-content">
     <div class="container">
         <div class="row g-5">
@@ -602,66 +197,46 @@ try {
 
                 <!-- FOTO BANNER DESA -->
                 <div class="detail-image-card mb-4" style="border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
-                    <img
-                        src="../pictures/destinasi/CintaNagara.webp"
-                        alt="Desa Wisata Cintanagara"
-                        class="detail-image"
-                        style="width: 100%; max-height: 420px; object-fit: cover;">
+                    <img src="../pictures/destinasi/CintaNagara.webp" alt="<?= htmlspecialchars($namaDesa) ?>" class="detail-image" style="width: 100%; max-height: 420px; object-fit: cover;">
                 </div>
-
                 <div class="photo-source mb-4">
                     <i class="bi bi-camera-fill"></i>
-                    <span>Sumber Foto: Dokumentasi Desa Wisata Cintanagara</span>
+                    <span>Sumber Foto: Dokumentasi <?= htmlspecialchars($namaDesa) ?></span>
                 </div>
 
+                <!-- PROFIL DESA -->
                 <article class="detail-article mb-5">
-
                     <span class="article-label">PROFIL DESA WISATA</span>
-
-                    <h2>Mengenal Desa Wisata Cintanagara</h2>
-
-                    <p>
-                        Desa Cintanagara merupakan salah satu desa wisata unggulan yang berada di Kecamatan Jatinagara, Kabupaten Ciamis, Jawa Barat. Terletak di kawasan perbukitan berhawa sejuk dengan bentangan alam yang masih sangat asri, Desa Cintanagara resmi ditetapkan sebagai Desa Wisata berdasarkan Surat Keputusan (SK) Bupati Ciamis.
-                    </p>
-
-                    <p>
-                        Keunikan utama Desa Wisata Cintanagara terletak pada integrasi tiga potensi wisata sekaligus: pesona wisata alam hutan pegunungan dan bumi perkemahan yang sarat peninggalan sejarah di Dusun Batudatar, aktivitas agrowisata perkebunan hortikultura berbasis kearifan lokal masyarakat, serta hamparan persawahan terasering berundak di sepanjang jalur Jalan Usaha Tani.
-                    </p>
-
-                    <p>
-                        Didukung oleh udara pegunungan yang segar, pemandangan lembah hijau yang memanjakan mata, serta keramahan warga pedesaan Sunda Galuh, Desa Cintanagara menjadi destinasi liburan yang sangat ideal bagi keluarga, pencinta alam, kelompok pelajar, hingga komunitas yang mendambakan ketenangan dan keaslian alam Priangan Timur.
-                    </p>
-
+                    <h2>Mengenal <?= htmlspecialchars($namaDesa) ?></h2>
+                    <p>Menghadirkan perpaduan pesona wisata alam pedesaan, perkebunan agrowisata, dan panorama jalan usaha tani.</p>
+                    <p>Secara administratif, <?= htmlspecialchars($namaDesa) ?> terletak di wilayah Kecamatan <?= htmlspecialchars($kecamatan) ?>, Kabupaten Ciamis, dan telah resmi dikukuhkan sebagai Desa Wisata berdasarkan ketetapan <strong>SK Bupati Ciamis No. <?= htmlspecialchars($skBupati) ?></strong> dengan status kategori <strong><?= htmlspecialchars($statusDesa) ?></strong>.</p>
                 </article>
 
-                <!-- ========================================================
-                     KATALOG DESTINASI DI DESA CINTANAGARA (KLIK UNTUK DETAIL)
-                     ======================================================== -->
+                <!-- KATALOG DESTINASI -->
                 <div class="destinasi-katalog-section mb-5">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
-                            <span class="badge bg-success-subtle text-success px-3 py-1-5 rounded-pill mb-1 small fw-semibold">
+                            <span class="badge bg-success-subtle text-success px-3 rounded-pill mb-1 small fw-semibold">
                                 <i class="bi bi-collection-fill me-1"></i> EKSPLORASI DESTINASI
                             </span>
-                            <h3 class="fw-bold text-dark mb-1">Destinasi di Desa Cintanagara</h3>
+                            <h3 class="fw-bold text-dark mb-1">Destinasi di <?= htmlspecialchars($namaDesa) ?></h3>
                         </div>
                         <span class="badge bg-success rounded-pill px-3 py-2">3 Destinasi Tersedia</span>
                     </div>
                     <p class="text-secondary small mb-4">
-                        Klik pada foto atau tombol destinasi di bawah ini untuk menuju halaman khusus masing-masing destinasi, melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket masuk</strong>:
+                        Klik pada foto atau tombol destinasi di bawah untuk menuju halaman khusus masing-masing destinasi, melihat <strong>deskripsi lengkap</strong>, <strong>galeri foto</strong>, <strong>fasilitas terperinci</strong>, dan <strong>pemesanan tiket</strong>:
                     </p>
-
                     <div class="row g-4">
 
-                        <!-- DESTINASI 1: WISATA ALAM & BUPER CINTA RASA -->
+                        <!-- DESTINASI: Wisata Alam -->
                         <div class="col-12">
                             <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white border">
                                 <div class="row g-0 align-items-center">
                                     <div class="col-md-5">
                                         <a href="../destinasi/wisata-alam" class="d-block overflow-hidden position-relative" style="height: 240px;">
-                                            <img src="../pictures/destinasi/CintaNagara.webp" alt="Wisata Alam & Buper Cinta Rasa" class="w-100 h-100 object-fit-cover card-img-zoom">
+                                            <img src="../pictures/destinasi/CintaNagara.webp" alt="Wisata Alam" class="w-100 h-100 object-fit-cover card-img-zoom">
                                             <span class="badge bg-success position-absolute top-0 start-0 m-3 shadow-sm">
-                                                <i class="bi bi-tree-fill me-1"></i> Wisata Alam &amp; Sejarah
+                                                <i class="bi bi-tree-fill me-1"></i> Alam
                                             </span>
                                             <span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-3 text-white small">
                                                 <i class="bi bi-cursor-fill me-1 text-warning"></i> Buka Halaman Destinasi
@@ -672,29 +247,30 @@ try {
                                         <div class="card-body p-4">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <h4 class="fw-bold text-dark mb-1">
-                                                    <a href="../destinasi/wisata-alam" class="text-dark text-decoration-none hover-success">
-                                                        Wisata Alam &amp; Buper Cinta Rasa
+                                                    <a href="../destinasi/wisata-alam" class="text-dark text-decoration-none">
+                                                        Wisata Alam
                                                     </a>
                                                 </h4>
-                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp 6.500</span>
+                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp <?= $hargaTiketFormat ?></span>
                                             </div>
                                             <small class="text-muted d-block mb-2">
-                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Dusun Batudatar, Desa Cintanagara
+                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Cintanagara, Kecamatan Jatinagara
                                             </small>
-                                            <p class="text-secondary small mb-3" style="line-height: 1.6;">
-                                                Wana Wisata Buper Cinta Rasa di Dusun Batudatar berpadu dengan situs peninggalan bersejarah turbin air era kolonial Belanda. Menyajikan bumi perkemahan berhawa sejuk di bawah pepohonan rindang dan aliran mata air pegunungan yang jernih.
+                                            <p class="text-secondary small mb-3" style="line-height: 1.65;">
+                                                Menyuguhkan keindahan alam pedesaan berhawa sejuk dengan panorama perbukitan hijau dan gemericik air alami.
                                             </p>
                                             <div class="mb-3 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Camping Ground Luas</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Turbin Zaman Belanda</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toilet &amp; Kamar Bilas</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Warung Kopi &amp; Saung</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Jalur Trekking</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Spot Foto Alam</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Area Parkir</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toilet</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Warung</span>
                                             </div>
                                             <div class="d-flex gap-2 flex-wrap">
                                                 <a href="../destinasi/wisata-alam" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
                                                     <i class="bi bi-eye-fill me-1"></i> Lihat Deskripsi, Galeri &amp; Fasilitas
                                                 </a>
-                                                <a href="../pemesanan.php?destinasi=Wisata%20Alam" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
+                                                <a href="../pemesanan.php?destinasi=<?= urlencode('Wisata Alam') ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
                                                     <i class="bi bi-ticket-perforated me-1"></i> Pesan Tiket
                                                 </a>
                                             </div>
@@ -704,15 +280,15 @@ try {
                             </div>
                         </div>
 
-                        <!-- DESTINASI 2: AGROWISATA PEDESAAN -->
+                        <!-- DESTINASI: Agrowisata -->
                         <div class="col-12">
                             <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white border">
                                 <div class="row g-0 align-items-center">
                                     <div class="col-md-5">
                                         <a href="../destinasi/agrowisata" class="d-block overflow-hidden position-relative" style="height: 240px;">
-                                            <img src="../pictures/destinasi/AgroCipaku.webp" alt="Agrowisata Pedesaan Cintanagara" class="w-100 h-100 object-fit-cover card-img-zoom">
-                                            <span class="badge bg-primary position-absolute top-0 start-0 m-3 shadow-sm">
-                                                <i class="bi bi-flower1 me-1"></i> Agrowisata &amp; Edukasi
+                                            <img src="../pictures/destinasi/AgroCipaku.webp" alt="Agrowisata" class="w-100 h-100 object-fit-cover card-img-zoom">
+                                            <span class="badge bg-success position-absolute top-0 start-0 m-3 shadow-sm">
+                                                <i class="bi bi-tree-fill me-1"></i> Alam
                                             </span>
                                             <span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-3 text-white small">
                                                 <i class="bi bi-cursor-fill me-1 text-warning"></i> Buka Halaman Destinasi
@@ -723,29 +299,29 @@ try {
                                         <div class="card-body p-4">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <h4 class="fw-bold text-dark mb-1">
-                                                    <a href="../destinasi/agrowisata" class="text-dark text-decoration-none hover-success">
-                                                        Agrowisata Pedesaan Cintanagara
+                                                    <a href="../destinasi/agrowisata" class="text-dark text-decoration-none">
+                                                        Agrowisata
                                                     </a>
                                                 </h4>
-                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp 6.500</span>
+                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp <?= $hargaTiketFormat ?></span>
                                             </div>
                                             <small class="text-muted d-block mb-2">
-                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Area Perkebunan, Desa Cintanagara
+                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Cintanagara, Kecamatan Jatinagara
                                             </small>
-                                            <p class="text-secondary small mb-3" style="line-height: 1.6;">
-                                                Kawasan perkebunan dan pertanian hortikultura terpadu berbasis kearifan lokal masyarakat. Menawarkan pengalaman petik buah segar langsung dari pohon, edukasi pertanian ramah lingkungan, serta gazebo santai di tengah kebun asri.
+                                            <p class="text-secondary small mb-3" style="line-height: 1.65;">
+                                                Lahan perkebunan holtikultura dan buah-buahan lokal yang asri, menawarkan pengalaman memetik hasil kebun langsung bersama petani.
                                             </p>
                                             <div class="mb-3 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kebun Edukasi Petik Buah</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Saung Tani Tradisional</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toko Bibit &amp; Hasil Panen</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Kebun Buah Edukasi</span>
                                                 <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Gazebo Istirahat</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Toilet</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Pusat Bibit Tanaman</span>
                                             </div>
                                             <div class="d-flex gap-2 flex-wrap">
                                                 <a href="../destinasi/agrowisata" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
                                                     <i class="bi bi-eye-fill me-1"></i> Lihat Deskripsi, Galeri &amp; Fasilitas
                                                 </a>
-                                                <a href="../pemesanan.php?destinasi=Agrowisata" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
+                                                <a href="../pemesanan.php?destinasi=<?= urlencode('Agrowisata') ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
                                                     <i class="bi bi-ticket-perforated me-1"></i> Pesan Tiket
                                                 </a>
                                             </div>
@@ -755,15 +331,15 @@ try {
                             </div>
                         </div>
 
-                        <!-- DESTINASI 3: JALAN USAHA TANI -->
+                        <!-- DESTINASI: Jalan Usaha Tani -->
                         <div class="col-12">
                             <div class="card border-0 shadow-sm rounded-4 overflow-hidden destinasi-card-hover bg-white border">
                                 <div class="row g-0 align-items-center">
                                     <div class="col-md-5">
                                         <a href="../destinasi/jalan-usaha-tani" class="d-block overflow-hidden position-relative" style="height: 240px;">
-                                            <img src="../pictures/destinasi/KampungSawah.jpeg" alt="Jalan Usaha Tani Cintanagara" class="w-100 h-100 object-fit-cover card-img-zoom">
+                                            <img src="../pictures/destinasi/KampungSawah.jpeg" alt="Jalan Usaha Tani" class="w-100 h-100 object-fit-cover card-img-zoom">
                                             <span class="badge bg-success position-absolute top-0 start-0 m-3 shadow-sm">
-                                                <i class="bi bi-bicycle me-1"></i> Wisata Alam &amp; Olahraga
+                                                <i class="bi bi-tree-fill me-1"></i> Alam
                                             </span>
                                             <span class="badge bg-dark bg-opacity-75 position-absolute bottom-0 start-0 m-3 text-white small">
                                                 <i class="bi bi-cursor-fill me-1 text-warning"></i> Buka Halaman Destinasi
@@ -774,29 +350,29 @@ try {
                                         <div class="card-body p-4">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <h4 class="fw-bold text-dark mb-1">
-                                                    <a href="../destinasi/jalan-usaha-tani" class="text-dark text-decoration-none hover-success">
-                                                        Jalan Usaha Tani Cintanagara
+                                                    <a href="../destinasi/jalan-usaha-tani" class="text-dark text-decoration-none">
+                                                        Jalan Usaha Tani
                                                     </a>
                                                 </h4>
-                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp 6.500</span>
+                                                <span class="badge bg-light text-success border border-success-subtle fw-semibold">Rp <?= $hargaTiketFormat ?></span>
                                             </div>
                                             <small class="text-muted d-block mb-2">
-                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Kawasan Persawahan, Desa Cintanagara
+                                                <i class="bi bi-geo-alt-fill text-success me-1"></i>Desa Cintanagara, Kecamatan Jatinagara
                                             </small>
-                                            <p class="text-secondary small mb-3" style="line-height: 1.6;">
-                                                Jalur lintasan pedesaan berhawa sejuk yang membentang menembus hamparan persawahan terasering hijau dan aliran parit irigasi alami. Sangat cocok untuk jogging pagi, jalan santai, maupun bersepeda menikmati matahari terbit.
+                                            <p class="text-secondary small mb-3" style="line-height: 1.65;">
+                                                Jalur lintasan asri menembus hamparan sawah dan kebun yang cocok untuk bersepeda pagi dan jalan santai pedesaan.
                                             </p>
                                             <div class="mb-3 d-flex flex-wrap gap-1">
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Jalur Jogging &amp; Sepeda</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Gardu Pandang Terasering</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Spot Foto Pematang</span>
-                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Warung Kopi Tradisional</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Jalur Sepeda & Jogging</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Spot Foto Sunrise</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Bangku Istirahat</span>
+                                                <span class="badge bg-light text-secondary border small"><i class="bi bi-check2 text-success me-1"></i>Area Parkir</span>
                                             </div>
                                             <div class="d-flex gap-2 flex-wrap">
                                                 <a href="../destinasi/jalan-usaha-tani" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold">
                                                     <i class="bi bi-eye-fill me-1"></i> Lihat Deskripsi, Galeri &amp; Fasilitas
                                                 </a>
-                                                <a href="../pemesanan.php?destinasi=Jalan%20Usaha%20Tani" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
+                                                <a href="../pemesanan.php?destinasi=<?= urlencode('Jalan Usaha Tani') ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2">
                                                     <i class="bi bi-ticket-perforated me-1"></i> Pesan Tiket
                                                 </a>
                                             </div>
@@ -811,84 +387,87 @@ try {
 
             </div>
 
-            <!-- SIDEBAR INFORMASI DESA & TIKET -->
+            <!-- SIDEBAR INFORMASI DESA -->
             <div class="col-lg-4">
                 <aside class="detail-sidebar sticky-top" style="top: 95px;">
 
-                    <!-- KARTU INFORMASI DESA -->
+                    <!-- INFO DESA -->
                     <div class="info-card mb-4">
                         <h3>Informasi Desa Wisata</h3>
-
                         <div class="info-item">
                             <i class="bi bi-geo-alt-fill"></i>
                             <div>
                                 <span>Lokasi Desa</span>
-                                <a
-                                    href="https://www.google.com/maps/search/?api=1&query=Desa+Cintanagara+Jatinagara+Ciamis"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="location-link"
-                                >
-                                    <strong>Desa Cintanagara</strong>
-                                    <small>
-                                        <i class="bi bi-box-arrow-up-right"></i>
-                                        Lihat di Google Maps
-                                    </small>
+                                <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($namaDesa . ' ' . $kecamatan . ' Ciamis') ?>" target="_blank" rel="noopener noreferrer" class="location-link">
+                                    <strong><?= htmlspecialchars($namaDesa) ?></strong>
+                                    <small><i class="bi bi-box-arrow-up-right"></i> Lihat di Google Maps</small>
                                 </a>
                             </div>
                         </div>
-
                         <div class="info-item">
                             <i class="bi bi-map"></i>
                             <div>
                                 <span>Kecamatan</span>
-                                <strong>Jatinagara</strong>
+                                <strong><?= htmlspecialchars($kecamatan) ?></strong>
                             </div>
                         </div>
-
                         <div class="info-item">
                             <i class="bi bi-file-earmark-check-fill"></i>
                             <div>
-                                <span>Legalitas SK Bupati</span>
-                                <strong>446/Kpts.232-Huk/2020</strong>
+                                <span>SK Penetapan Bupati</span>
+                                <strong><?= htmlspecialchars($skBupati) ?></strong>
                             </div>
                         </div>
-
                         <div class="info-item">
-                            <i class="bi bi-tag-fill"></i>
+                            <i class="bi bi-award-fill"></i>
                             <div>
-                                <span>Kategori Wisata</span>
-                                <strong>Wisata Alam &amp; Budaya Terpadu</strong>
+                                <span>Status Kategori</span>
+                                <span class="badge bg-success-subtle text-success fw-semibold"><?= htmlspecialchars($statusDesa) ?></span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="bi bi-collection-fill"></i>
+                            <div>
+                                <span>Jumlah Destinasi</span>
+                                <strong>3 Destinasi</strong>
                             </div>
                         </div>
                     </div>
 
-                    <!-- KARTU PEMESANAN TIKET CEPAT -->
-                    <div class="visit-card mb-4" style="background: linear-gradient(135deg, #176b52 0%, #0e4534 100%); color: #fff; border-radius: 16px; padding: 24px;">
-                        <div class="visit-icon mb-2" style="font-size: 28px; color: #8ee4b5;">
-                            <i class="bi bi-ticket-perforated-fill"></i>
+                    <!-- INFO TIKET -->
+                    <div class="info-card mb-4">
+                        <h3>Informasi Kunjungan</h3>
+                        <div class="info-item">
+                            <i class="bi bi-ticket-perforated-fill text-success"></i>
+                            <div>
+                                <span>Harga Tiket Masuk</span>
+                                <strong class="text-success fs-5">Rp <?= $hargaTiketFormat ?> / orang</strong>
+                            </div>
                         </div>
-
-                        <h4 class="fw-bold mb-2 text-white">Reservasi E-Ticket</h4>
-
-                        <p class="small text-white-50 mb-3" style="line-height: 1.6;">
-                            Pesan tiket masuk resmi destinasi di Desa Cintanagara secara online. Dapatkan barcode e-ticket instan dan verifikasi mudah di gerbang masuk.
-                        </p>
-
-                        <a href="../pemesanan.php?destinasi=Wisata%20Alam" class="btn btn-light w-100 rounded-pill fw-bold text-success py-2 shadow-sm">
-                            <i class="bi bi-cart-plus me-1"></i> Pesan Tiket Masuk
-                        </a>
+                        <div class="info-item">
+                            <i class="bi bi-clock-fill"></i>
+                            <div>
+                                <span>Jam Operasional</span>
+                                <strong>08.00 – 17.00 WIB</strong>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="../pemesanan.php?destinasi=<?= urlencode($namaDestinasi) ?>" class="btn btn-success w-100 rounded-pill fw-semibold">
+                                <i class="bi bi-ticket-perforated me-2"></i>Pesan Tiket Sekarang
+                            </a>
+                        </div>
                     </div>
 
-                    <!-- KARTU PETA GOOGLE MAPS -->
-                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-pin-map-fill text-success me-2"></i>Panduan Rute Wisata</h6>
-                        <p class="text-secondary small mb-3">
-                            Akses menuju Desa Wisata Cintanagara dapat ditempuh dari pusat kota Ciamis melalui rute Kawali - Jatinagara.
-                        </p>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Desa+Cintanagara+Jatinagara+Ciamis" target="_blank" class="btn btn-outline-secondary btn-sm w-100 rounded-pill">
-                            <i class="bi bi-compass me-1"></i> Petunjuk Arah GPS
-                        </a>
+                    <!-- JELAJAHI DESA -->
+                    <div class="info-card bg-success text-white">
+                        <div class="text-center py-2">
+                            <i class="bi bi-compass-fill" style="font-size: 2rem; opacity: 0.8;"></i>
+                            <h5 class="fw-bold mt-2 mb-1">Jelajahi <?= htmlspecialchars($namaDesa) ?></h5>
+                            <p class="small mb-3 opacity-75">Nikmati pesona alam dan kearifan lokal di <?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?>.</p>
+                            <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($namaDesa . ' ' . $kecamatan . ' Ciamis') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-light btn-sm rounded-pill px-4 fw-semibold text-success">
+                                <i class="bi bi-geo-alt-fill me-1"></i> Lihat Lokasi
+                            </a>
+                        </div>
                     </div>
 
                 </aside>
@@ -898,329 +477,130 @@ try {
     </div>
 </main>
 
-<!-- DESTINASI TERKAIT -->
-<section class="related-destination">
-    <div class="container">
-
-        <div class="section-heading">
-            <span class="section-label">JELAJAHI LAGI</span>
-
-            <h2>Destinasi Wisata Ciamis</h2>
-
-            <p>
-                Temukan berbagai destinasi menarik lainnya
-                di Kabupaten Ciamis.
-            </p>
-        </div>
-
-        <div class="text-center">
-            <a href="../destinasi.php" class="btn btn-primary">
-                Lihat Semua Destinasi
-                <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-
-    </div>
-</section>
-
 <!-- ULASAN PENGUNJUNG -->
 <section class="review-section" id="ulasan">
     <div class="container">
-
         <div class="review-heading">
-            <span class="section-label">PENGALAMAN PENGUNJUNG</span>
-            <h2>Ulasan Pengunjung</h2>
-            <p>
-                Bagikan pengalaman dan pendapat kamu setelah mengunjungi
-                Desa Cintanagara.
-            </p>
+            <h2><i class="bi bi-chat-square-quote-fill me-2"></i>Ulasan Pengunjung</h2>
+            <p class="text-muted"><?= htmlspecialchars($namaDesa) ?>, Kecamatan <?= htmlspecialchars($kecamatan) ?></p>
         </div>
 
         <?php if ($pesanUlasan): ?>
-            <div class="alert alert-<?= htmlspecialchars($pesanUlasan['type'], ENT_QUOTES, 'UTF-8') ?> review-alert">
-                <?= htmlspecialchars($pesanUlasan['text'], ENT_QUOTES, 'UTF-8') ?>
-            </div>
+        <div class="alert alert-<?= $pesanUlasan['type'] ?> review-alert">
+            <?= htmlspecialchars($pesanUlasan['text']) ?>
+        </div>
         <?php endif; ?>
 
-        <!-- RINGKASAN RATING -->
+        <?php if ($jumlahUlasan > 0): ?>
         <div class="review-summary">
-
-            <div class="review-average">
-                <?= number_format($rataRating, 1, ',', '.') ?>
-            </div>
-
+            <div class="review-average"><?= number_format($rataRating, 1) ?></div>
             <div>
                 <div class="review-stars">
-                    <?php
-                    $ratingBulat = (int) round($rataRating);
-
-                    for ($i = 1; $i <= 5; $i++):
-                    ?>
-                        <?php if ($i <= $ratingBulat): ?>
-                            <i class="bi bi-star-fill"></i>
-                        <?php else: ?>
-                            <i class="bi bi-star"></i>
-                        <?php endif; ?>
+                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <i class="bi bi-star<?= $i <= round($rataRating) ? '-fill' : '' ?>"></i>
                     <?php endfor; ?>
                 </div>
-
-                <div class="review-total">
-                    <?= $jumlahUlasan ?> ulasan pengunjung
-                </div>
+                <div class="review-total"><?= $jumlahUlasan ?> ulasan pengunjung</div>
             </div>
-
         </div>
-
-        <!-- DAFTAR ULASAN -->
-        <div class="review-list">
-
-            <?php if (!empty($daftarUlasan)): ?>
-
-                <?php foreach ($daftarUlasan as $ulasan): ?>
-
-                    <div class="review-item">
-
-                        <div class="review-user">
-
-                            <div class="review-avatar">
-                                <i class="bi bi-person-fill"></i>
-                            </div>
-
-                            <div class="review-user-info">
-                                <strong>
-                                    <?= htmlspecialchars($ulasan['user_name'], ENT_QUOTES, 'UTF-8') ?>
-                                </strong>
-
-                                <small>
-                                    <?php
-                                    echo !empty($ulasan['created_at'])
-                                        ? date('d M Y', strtotime($ulasan['created_at']))
-                                        : '';
-                                    ?>
-                                </small>
-                            </div>
-
-                        </div>
-
-                        <div class="review-stars">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-
-                                <?php if ($i <= (int) $ulasan['rating']): ?>
-                                    <i class="bi bi-star-fill"></i>
-                                <?php else: ?>
-                                    <i class="bi bi-star"></i>
-                                <?php endif; ?>
-
-                            <?php endfor; ?>
-                        </div>
-
-                        <p class="review-comment">
-                            <?= nl2br(htmlspecialchars($ulasan['comment'], ENT_QUOTES, 'UTF-8')) ?>
-                        </p>
-
+        <div>
+            <?php foreach ($daftarUlasan as $ulasan): ?>
+            <div class="review-item">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="review-avatar"><i class="bi bi-person-fill"></i></div>
+                    <div>
+                        <strong class="d-block" style="color:#26352d;"><?= htmlspecialchars($ulasan['user_name']) ?></strong>
+                        <small class="text-muted"><?= htmlspecialchars(substr($ulasan['created_at'] ?? '', 0, 10)) ?></small>
                     </div>
-
-                <?php endforeach; ?>
-
-            <?php else: ?>
-
-                <div class="review-empty">
-                    <i class="bi bi-chat-square-text"></i>
-
-                    <h5>Belum Ada Ulasan</h5>
-
-                    <p class="mb-0">
-                        Jadilah pengunjung pertama yang memberikan ulasan
-                        untuk Desa Cintanagara.
-                    </p>
                 </div>
-
-            <?php endif; ?>
-
-        </div>
-
-        <!-- FORM KIRIM ULASAN -->
-        <?php if ($sudahLogin): ?>
-
-            <div class="review-form-card">
-
-                <h3>
-                    <i class="bi bi-pencil-square me-2"></i>
-                    Tulis Ulasan Kamu
-                </h3>
-
-                <form action="cintanagara.php#ulasan" method="POST">
-
-                    <input
-                        type="hidden"
-                        name="review_csrf"
-                        value="<?= htmlspecialchars($_SESSION['review_csrf'], ENT_QUOTES, 'UTF-8') ?>"
-                    >
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            Berikan Rating
-                        </label>
-
-                        <div class="rating-input">
-
-                            <input type="radio" id="star5" name="rating" value="5" required>
-                            <label for="star5" title="Sangat Baik">
-                                <i class="bi bi-star-fill"></i>
-                            </label>
-
-                            <input type="radio" id="star4" name="rating" value="4">
-                            <label for="star4" title="Baik">
-                                <i class="bi bi-star-fill"></i>
-                            </label>
-
-                            <input type="radio" id="star3" name="rating" value="3">
-                            <label for="star3" title="Cukup">
-                                <i class="bi bi-star-fill"></i>
-                            </label>
-
-                            <input type="radio" id="star2" name="rating" value="2">
-                            <label for="star2" title="Kurang">
-                                <i class="bi bi-star-fill"></i>
-                            </label>
-
-                            <input type="radio" id="star1" name="rating" value="1">
-                            <label for="star1" title="Buruk">
-                                <i class="bi bi-star-fill"></i>
-                            </label>
-
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="comment" class="form-label fw-semibold">
-                            Komentar
-                        </label>
-
-                        <textarea
-                            name="comment"
-                            id="comment"
-                            class="form-control"
-                            placeholder="Ceritakan pengalaman kamu mengunjungi Desa Cintanagara..."
-                            maxlength="1000"
-                            required
-                        ></textarea>
-
-                        <small class="text-muted">
-                            Maksimal 1000 karakter.
-                        </small>
-                    </div>
-
-                    <button type="submit" name="kirim_ulasan" class="review-submit">
-                        <i class="bi bi-send me-2"></i>
-                        Kirim Ulasan
-                    </button>
-
-                </form>
-
+                <div class="review-stars mb-2" style="font-size:14px;">
+                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                        <i class="bi bi-star<?= $i <= (int)$ulasan['rating'] ? '-fill' : '' ?>"></i>
+                    <?php endfor; ?>
+                </div>
+                <p class="text-muted small mb-0" style="line-height:1.7;"><?= nl2br(htmlspecialchars($ulasan['comment'])) ?></p>
             </div>
-
+            <?php endforeach; ?>
+        </div>
         <?php else: ?>
-
-            <div class="review-login">
-
-                <h5 class="fw-bold">
-                    Ingin memberikan ulasan?
-                </h5>
-
-                <p class="text-muted mb-3">
-                    Silakan masuk ke akun kamu terlebih dahulu untuk memberikan rating dan komentar.
-                </p>
-
-                <a href="../masuk.php" class="btn btn-success">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>
-                    Masuk untuk Memberikan Ulasan
-                </a>
-
-            </div>
-
+        <div class="review-empty mb-3" style="background:#fff; text-align:center; padding:30px; border:1px dashed #d9e2dc; border-radius:14px; color:#777;">
+            <i class="bi bi-chat-square-text" style="display:block; font-size:32px; color:#a5b9ac; margin-bottom:10px;"></i>
+            Belum ada ulasan untuk <?= htmlspecialchars($namaDesa) ?>. Jadilah yang pertama memberikan ulasan!
+        </div>
         <?php endif; ?>
 
+        <?php if ($sudahLogin): ?>
+        <div class="review-form-card">
+            <h3>Tulis Ulasan Anda</h3>
+            <form method="POST" action="">
+                <input type="hidden" name="kirim_ulasan" value="1">
+                <input type="hidden" name="review_csrf" value="<?= htmlspecialchars($_SESSION['review_csrf']) ?>">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Rating</label>
+                    <div class="rating-input">
+                        <?php for ($i = 5; $i >= 1; $i--): ?>
+                        <input type="radio" name="rating" id="star<?= $i ?>" value="<?= $i ?>">
+                        <label for="star<?= $i ?>" title="<?= $i ?> bintang">&#9733;</label>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="comment" class="form-label fw-semibold">Komentar</label>
+                    <textarea class="form-control" id="comment" name="comment" placeholder="Ceritakan pengalaman kunjungan Anda..." style="min-height:110px; resize:vertical;" maxlength="1000"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success fw-semibold rounded-pill px-4">
+                    <i class="bi bi-send-fill me-1"></i> Kirim Ulasan
+                </button>
+            </form>
+        </div>
+        <?php else: ?>
+        <div class="p-4 bg-white border border-light-subtle rounded-4 mt-3 text-center">
+            <p class="text-muted mb-3">Anda perlu login untuk memberikan ulasan.</p>
+            <a href="../masuk.php" class="btn btn-success rounded-pill px-4">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Masuk untuk Memberikan Ulasan
+            </a>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
 
 <!-- FOOTER -->
 <footer class="footer">
     <div class="container">
-
-        <div class="row g-4">
-
-            <div class="col-lg-5">
-                <a href="../index.php" class="footer-logo">
-                    <img
-                        src="../pictures/LogoDispar.png"
-                        alt="Logo Desa Wisata Kabupaten Ciamis"
-                    >
-                </a>
-
-                <p>
-                    Media informasi dan pengenalan potensi Desa Wisata
-                    Kabupaten Ciamis.
-                </p>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <img src="../pictures/LogoDispar.png" alt="DewiCiamis">
+                <p>Platform informasi desa wisata Kabupaten Ciamis yang menampilkan potensi wisata alam, budaya, dan sejarah dari seluruh desa wisata.</p>
             </div>
-
-            <div class="col-lg-3 col-md-6">
-                <h4>Navigasi</h4>
-
+            <div class="footer-links">
+                <h4>Menu</h4>
                 <ul>
                     <li><a href="../index.php">Beranda</a></li>
-                    <li><a href="../destinasi.php">Destinasi</a></li>
+                    <li><a href="../destinasi.php">Desa Wisata</a></li>
                     <li><a href="../berita.php">Berita</a></li>
-                    <li><a href="../pemesanan.php">Pemesanan</a></li>
+                    <li><a href="../pemesanan.php">Tiket</a></li>
                     <li><a href="../pusat-bantuan.php">Pusat Bantuan</a></li>
                 </ul>
             </div>
-
-            <div class="col-lg-4 col-md-6">
-                <h4>Kontak</h4>
-
-                <p>
-                    <i class="bi bi-geo-alt-fill"></i>
-                    Kabupaten Ciamis, Jawa Barat
-                </p>
-
-                <p>
-                    <i class="bi bi-envelope-fill"></i>
-                    info@dewiciamis.id
-                </p>
+            <div class="footer-links">
+                <h4>Akun</h4>
+                <ul>
+                    <li><a href="../masuk.php">Masuk</a></li>
+                    <li><a href="../daftar.php">Daftar</a></li>
+                    <?php if ($sudahLogin): ?>
+                    <li><a href="../akun-saya.php">Profil Saya</a></li>
+                    <li><a href="../keluar.php">Keluar</a></li>
+                    <?php endif; ?>
+                </ul>
             </div>
-
         </div>
-
-        <hr>
-
         <div class="footer-bottom">
-            <p>
-                © 2026 Desa Wisata Kabupaten Ciamis.
-                Semua Hak Dilindungi.
-            </p>
-
-            <div class="social-links">
-                <a href="#" aria-label="Facebook">
-                    <i class="bi bi-facebook"></i>
-                </a>
-
-                <a href="#" aria-label="Instagram">
-                    <i class="bi bi-instagram"></i>
-                </a>
-
-                <a href="#" aria-label="YouTube">
-                    <i class="bi bi-youtube"></i>
-                </a>
-            </div>
+            <p>&copy; <?= date('Y') ?> DewiCiamis &mdash; Dinas Pariwisata Kabupaten Ciamis</p>
         </div>
-
     </div>
 </footer>
 
-<!-- JAVASCRIPT -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../js/main.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../main.js"></script>
 </body>
 </html>
